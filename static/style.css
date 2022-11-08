@@ -1,0 +1,302 @@
+h1{font-size: 30pt}
+
+/* Desktop Arrangment */
+
+.body{
+	width: 100%;
+	height: 100%;
+	display: flex;
+	position: fixed;
+}
+
+.sixteen{
+	width: 25%;
+	height: 25%;
+	position: absolute;
+	text-align: center;
+	margin: auto;
+	overflow: hidden;
+	-webkit-transition: .2s cubic-bezier(0,.64,.05,1);
+    -moz-transition: .2s cubic-bezier(0,.64,.05,1);
+    -o-transition: .2s cubic-bezier(0,.64,.05,1);
+    transition: .2s cubic-bezier(0,.64,.05,1);
+}
+
+.open {
+    width: 100% !important;
+    height: 100% !important;
+    top: 0 !important;
+    left: 0 !important;
+    position: fixed !important;
+    z-index: 1000;
+    background: rgba(0,0,0,.5);
+    overflow: scroll;
+   }
+
+#sonufy_nav{
+	top: 0;
+	left: 0;
+	background: white;
+}
+
+#this_song{
+	top: 0;
+	left:  25%;
+}
+
+#rec_1{
+	top: 0;
+	left: 50%;
+}
+
+#rec_2{
+	top: 0;
+	left: 75%;
+}
+
+#rec_3{
+	top: 25%;
+	left: 0;
+}
+
+#rec_4{
+	top: 25%;
+	left:  75%;
+}
+
+#rec_5{
+	top: 50%;
+	left: 0;
+}
+
+#rec_6{
+	top: 50%;
+	left: 75%;
+}
+
+#rec_7{
+	top: 75%;
+	left: 0;
+}
+
+#rec_8{
+	top: 75%;
+	left:  25%;
+}
+
+#rec_9{
+	top: 75%;
+	left: 50%;
+}
+
+#rec_10{
+	top: 75%;
+	left: 75%;
+}
+
+#umap_plot{
+	top: 25%;
+	left: 25%;
+	width: 50%;
+	height: 50%;
+	background: gray;
+	position: absolute;
+}
+
+
+/* Nav Header*/
+
+#nav_header {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    align-items: center;
+}
+
+#logo_header{
+	height: 80%;
+    max-width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    -webkit-transition: .5s cubic-bezier(0,.64,.05,1);
+	transition: .5s cubic-bezier(0,.64,.05,1);
+	filter: drop-shadow(1px 1px 10px rgb(0 0 0 / 0));
+}
+
+/*#logo_header::after{
+	content: 'x';
+	position: absolute;
+	z-index: -1;
+	width: 100%;
+	height: 100%;
+	opacity: 0;
+	-webkit-transition: .5s cubic-bezier(0,.64,.05,1);
+	transition: .5s cubic-bezier(0,.64,.05,1);
+	filter: drop-shadow(2px 2px 5px rgb(0 0 0 / 1));
+}
+
+#logo_header:hover::after {
+	opacity: 1;
+	}*/
+
+
+
+#logo_img{
+	max-height: 70%;
+	max-width: 60%;
+	padding: 5% 0 2%;
+}
+
+#title_img{
+	height: 30%;
+	max-width: 100%;
+	padding: 0 5% 5%;
+}
+
+#search_input {
+    height: 20%;
+    padding: 5%;
+    border-radius: 10px;
+    max-width: 80%;
+}
+
+.open #search_input {
+    height: 50px;
+    padding: 5%;
+    border-radius: 10px;
+    font-size: 5vw;
+}
+
+.open #nav_header{
+	height: 80%;
+}
+
+.close {
+    width: 100px;
+    height: 100px;
+    position: fixed;
+    top: 0;
+    right: 0;
+    background: blue;
+    display: none;
+    cursor: pointer;
+    border-radius: 6vw;
+}
+
+.open .close{
+	display: block;
+}
+
+.hover{
+	position: absolute;
+	top: 0;
+	left: ;
+	width: 100%;
+	height: 100%;
+	display: block;
+	background: black;
+	opacity: 0;
+	cursor: pointer;
+	z-index: 2;
+}
+
+.hover:hover{
+	opacity: .2;
+}
+
+.open .hover{
+	display: none;
+}
+
+.no_display{
+	display: none !important;
+}
+
+
+.this_header_div, .rec_header_div {
+    display: flex;
+    align-items: center;
+    color: white;
+}
+
+.this_header_div > *, .rec_header_div > *  {
+    width: 100%;
+}
+
+.cover_art {
+    object-fit: cover;
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+.open .cover_art {
+    position: relative;
+    width: 50%;
+    height: 50%;
+}
+
+.open .this_header_div, .open .rec_header_div {
+    color: black;
+}
+
+.rec_full {
+    display: none;
+}
+
+.open .rec_full {
+    display: block;
+}
+
+.vector {
+    width: 100%;
+    height: 50%;
+    display: flex;
+}
+
+.vector_cell {
+    width: 1.5625%;
+    writing-mode: vertical-rl;
+    color: rgb(200,180,200);
+    font-size: 1vw;
+}
+
+.rec_vector_compare {
+    height: 20vw;
+}
+
+.track_div {
+    width: 98%;
+    margin: 1%;
+    background: white;
+    border-radius: 5vw;
+}
+
+.artist_info {
+    z-index: 1;
+}
+
+.rec_similarity {
+    display: flex;
+    width: 100%;
+}
+
+.rec_similarity > div {
+    width: 100%;
+}
+
+
+.feature_compare {
+    display: flex;
+    width: 100%;
+}
+
+.feature_compare > div {
+    width: 100%;
+}
+

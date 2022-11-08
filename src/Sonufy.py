@@ -148,6 +148,7 @@ class Sonufy:
         credentials_manager = SpotifyClientCredentials(client_id=client_id, client_secret=client_secret)
 
         self._spotify = spotipy.Spotify(client_credentials_manager=credentials_manager)
+        self.spotify = spotipy.Spotify(client_credentials_manager=credentials_manager)
 
     def load_tracks_db(self, filename):
 
@@ -499,9 +500,17 @@ class Sonufy:
                 similarity['time_similarity'] = self.get_similarity(vector, similarity, subset=self.latent_cols[:len(self.latent_cols)//2], num=num, popularity_threshold=popularity_threshold, sort_tracks=False)['similarity']
                 similarity['frequency_similarity'] = self.get_similarity(vector, similarity, subset=self.latent_cols[len(self.latent_cols)//2:], num=num, popularity_threshold=popularity_threshold, sort_tracks=False)['similarity']
 
-                return track, similarity[['track_name','track_uri','artist_name','similarity','track_popularity','time_similarity','frequency_similarity']], similarity, vector
-            else:
-                return track, similarity[['track_name','track_uri','artist_name','similarity','track_popularity']], similarity, vector
+
+            track_ids = [track['id']] + list(similarity['track_id'])
+
+            tracks = self._spotify.tracks(track_ids)
+
+            similarity['album_art_url'] = [tracks['tracks'][i]['album']['images'][-1]['url'] for i in range(1,len(similarity)+1)]
+
+            audio_features = self._spotify.audio_features(tracks=track_ids)
+            
+            return track, similarity, vector, audio_features
+            
 
         else:
             print('No Preview Available. Try a different search.')
