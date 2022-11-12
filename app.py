@@ -4,6 +4,7 @@ from dash import dcc
 from dash import html
 import dash_bootstrap_components as dbc
 from dash.exceptions import PreventUpdate
+import dash_daq as daq
 
 from config import config
 import pandas as pd
@@ -12,11 +13,41 @@ from src.Sonufy import *
 
 import visdcc
 
+import plotly_express as px
+import plotly.graph_objs as go
+
+from pyarrow import feather
+
+import requests
+
+import spotipy
+
+from time import sleep
+
+BASE_URL = 'https://api.spotify.com/v1/'
+AUTH_URL = "https://accounts.spotify.com/authorize"
+TOKEN_URL = "https://accounts.spotify.com/api/token"
+CLIENT_ID = '6ecc85041d924931a24d8e59e50e03f9'
+
+SCOPE = "user-read-private user-read-playback-state user-modify-playback-state streaming"
+
+
+from dash_auth_external import DashAuthExternal
+
+auth = DashAuthExternal(AUTH_URL, TOKEN_URL, CLIENT_ID, scope=SCOPE)
+server = (
+    auth.server
+)
+
+def get_authorization_header(access_token):
+    return {"Authorization": "Bearer {}".format(access_token)}
+
 ########################## Setup ##########################
 
 # App Instance
-app = dash.Dash(name=config.name, assets_folder="static", external_scripts=['https://code.jquery.com/jquery-3.6.1.slim.min.js'], external_stylesheets=[dbc.themes.YETI])
+app = dash.Dash(name=config.name, use_pages=True, assets_folder="static", external_scripts=['https://code.jquery.com/jquery-3.6.1.slim.min.js'], external_stylesheets=[dbc.themes.YETI], server= server, suppress_callback_exceptions=True)
 app.title = config.name
+
 
 def load_sonufy():
 	model_path = 'model'
@@ -28,114 +59,96 @@ def load_sonufy():
 
 sonufy = load_sonufy()
 
+#### UMAP SETUP #####
+
+base_genres_names = feather.read_feather('data/base_genres_names.feather')
+
+base_genres = sonufy.genres[sonufy.genres.genre.isin(base_genres_names.name)].reset_index(drop=True)
+
+base_genres['name'] = base_genres['genre']
+base_genres['label'] = 0
+
+genre_map = load('model/genre_map.bin')
+
 ########################## Sonufy Nav Components ##########################
 
 # start with 'open' className for css to display full screen
-
-sonufy_block = []
-
-# logo
-
-block_header = html.Div(id='nav_header', children=[])
-logo_header = html.Div(id='logo_header', children=[])
-
-logo = html.Img(id='logo_img', src='static/logo.svg')
-logo_header.children.append(logo)
-
-# title
-
-title = html.Img(id='title_img', src='static/sonufy.svg', alt='Sonufy')
-logo_header.children.append(title)
-block_header.children.append(logo_header)
-
-# search bar
-
-search_bar = dbc.Input(id="search_input", placeholder="Search for a track on Spotify", type="text", debounce=True)
-block_header.children.append(search_bar)
-
+uri = '2Amr61JmOUVaunLKPSe39i'
+nav = [
+	html.Div(id='basic_nav', children=[
+		# logo
+		html.Div(id='logo_header', children=[
+			html.Img(id='logo_img', src='static/logo.svg'),
+			html.Img(id='title_img', src='static/sonufy.svg', alt='Sonufy')
+		]),
+	
+		# search bar
+		dbc.Input(id="search_input", placeholder="Search for a track on Spotify", type="text", debounce=True),
+		html.Button(children='Play', id='play_button', className="togglePlay", value=uri),
+		]),
 	
 
-# search button
+	html.Div(id='advanced_nav', children=[
+		html.Div(id='umap_nav', children=[
+			dcc.Graph(id='advanced_umap', responsive=True, config={'autosizable':True, 'frameMargins':0, 'displayModeBar':'hover'})
+				]),
 
-# search_button = html.Button('Search', id='search_submit', n_clicks=0)
-# block_header.append(search_button)
-
-sonufy_block.append(block_header)
-
-block_full = html.Div(id='nav_full', children=[])
-sonufy_block.append(block_full)
-
-# tabs?
-
-	# advanced
-
-		# manual search
-
-			# umap plot
-
-			# n dials
-
-	# about
-
-		# markdown of explanation?
-
-########################## This Song Components ##########################
-
-# This song
-
-# album cover
-
-# play button
-
-# like button
-
-# title
-
-# artist
-
-# year - predicted year with linear regression model on embeddings?
-
-# genre - predict with log reg?
-
-# how about all spotify metrics? triggered by search
+		html.Div(id='advanced_knobs', children=[
+			html.Div(className='knobs_section', children=[
+				dcc.Input(id=f'number_{j*len(sonufy.latent_cols)//4 + i}', className='advanced_num_input', step=.1, type='range', inputMode='numeric', min=-1, max=1, value=0, debounce=True) for i in range(len(sonufy.latent_cols)//4)
+				]) for j in range(4)
+			
+			])
+		])
+]
 
 
-########################## Recommendation Components ##########################
+sonufy_block = [
+	html.Div(id='nav_header', children=nav),
 
-# x close or back button
-
-# Number for rec
-
-# record cover
-
-# play button
-
-# like button
-
-# title
-
-# artist
-
-# similarity index
-
-	# colored circle with color as measure of similarity
-
-# embedding comparison
-
-# compare spotify metrics with query
-
-	# three columns - query vs rec with diff in middle (colored circle)
-
-## must be scrollable div inside fixed 100% div with x close in corner or back
+	dcc.Tabs(id='nav_tabs', value='basic', children=[
+        dcc.Tab(label='Basic', value='basic'),
+        dcc.Tab(label='Advanced', value='advanced'),
+    ])
+]
 
 
 
+@app.callback(
+	Output('advanced_umap', 'figure'),
+	*[Input(f'number_{i}', 'value') for i in range(len(sonufy.latent_cols))]
+)
+def render_advanced_umap(*numbers):
+	this_track_df = pd.DataFrame([numbers], columns=sonufy.latent_cols)
+	this_track_df['name'] = 'input'
+	this_track_df['label'] = 2
 
-########################## Umap Plot Components ##########################
+	genres_and_tracks = pd.concat([base_genres, this_track_df]).reset_index(drop=True)
 
-# plot
+	genre_map_trans = genre_map.transform(genres_and_tracks[sonufy.latent_cols])
 
-# controls
+	genre_map_df = pd.DataFrame(genre_map_trans, columns=['x','y'])
+	genre_map_df = pd.concat([genres_and_tracks[['name','label']], genre_map_df], axis=1)
+	genre_map_df.label = genre_map_df.label.map({0:'genre', 1:'similar song', 2:'this song'})
+	genre_map_df['annotation'] = genre_map_df.apply(lambda x: x['name'] if x['label'] == 'genre' else '', axis=1)
+
+	fig = px.scatter(genre_map_df, x='x', y='y', color='label', hover_name='name', size=[.5]*len(genre_map_df), width=800, height=600, text='annotation')
+	
+
+	fig.update_layout(
+	    margin = dict(l=0, r=0, t=0, b=0),
+	    legend=dict(
+		    yanchor="top",
+		    y=0.99,
+		    xanchor="left",
+		    x=0.01
+		),
+		xaxis = dict(visible=False),
+		yaxis = dict(visible=False)
+	)
+
+	return fig
+
 
 ########################## Audio Player Components ##########################
 
@@ -171,9 +184,8 @@ this_song = html.Div(id='this_song', className='sixteen', children=[
 
 recs = [html.Div(id=f'rec_{i}', className='sixteen recs', children=[
 	html.Div(id=f'rec_{i}_hover', className='hover'),
-	html.Div(id=f'rec_div_{i}', className='track_div', children=[
-		html.H1(f'{i}'),
-	]),
+	html.Div(id=f'rec_div_{i}', className='track_div', children=[]),
+	html.Button(children='Play', id=f'play_button_rec_{i}', className="togglePlay", value=''),
 	html.Div(id=f'close_rec_{i}', className='close')
 	]) for i in range(1,11)]
 
@@ -188,55 +200,99 @@ body = [sonufy_nav, this_song]
 body.extend(recs)
 body.append(umap_plot)
 
+@app.callback(
+	Output('basic_nav', 'className'),
+	Output('advanced_nav', 'className'),
+	Input('nav_tabs', 'value'),
+)
+def render_content(tab):
+	if tab == 'basic':
+		return 'show', 'noshow'
+	if tab == 'advanced':
+		return 'noshow', 'show'
 
 ########################## Layout ##########################
 
 
 
 app.layout = html.Div(id='main', children=[
-	html.Div(className='body', children=body),
-	visdcc.Run_js(id = 'toggle_open'),
-
+	dcc.Store(id='memo'),
+	html.Div(id='body', className='body', children=body),
+	dash.page_container
 ])
 
+
+#player example code
+
 @app.callback(
-	Output('toggle_open', 'run'),
-	Input('main', 'n_clicks')
-	)
-def toggle_open(n_clicks):
-	if n_clicks == 1:
-		return """
-    $('.hover').click(function(){
-	    if ($(this).hasClass('open')){
-	    }else{
-	    	$(this).parent().addClass('open')
-	    }
-	    	
-    });
+	Output('play_button', 'children'),
+	Input('play_button', 'n_clicks'),
+	Input('play_button', 'value'))
+def test_spotify(n_clicks, uri):
+	if n_clicks != None:
+		token = (auth.get_token())
 
-    $('.close').click(function(){
-	    $('.sixteen').removeClass('open')
-    });
+		spotify = spotipy.Spotify(auth=token)
+		devices = spotify.devices()
 
-    """
+		device_id = devices['devices'][0]['id']
+
+		play_uri = [f'spotify:track:{uri}']
+
+		current_track = spotify.current_user_playing_track()
+
+
+		if current_track == None:
+			spotify.start_playback(device_id=device_id, uris=play_uri)
+			print('started from scratch, now playing')
+			return 'Pause'
+		else:
+			playing = current_track['is_playing']
+			current_uri = current_track['item']['id']
+
+			if playing and current_uri == uri:
+				spotify.pause_playback()
+				print('paused')
+				return 'Play'
+			elif current_uri != uri:
+				spotify.start_playback(uris=play_uri)
+				print('played from start')
+				return 'Pause'
+			else:
+				spotify.start_playback()
+				print('resumed play')
+				return 'Pause'
+
 	else:
-		return ''
+		return 'Play'
+
+
+# 	token_header = get_authorization_header(token)
+
+# 	top_url = BASE_URL + 'me/top/tracks'
+
+# 	r = requests.get(top_url, headers=token_header)
+
+# 	return [str(r.json()['items'][i]['name']) for i in range(len(r.json()['items']))]
 
 
 
 ########################## Functions ##########################
 
+
 @app.callback(
-	Output('nav_full', 'children'),
 	Output('sonufy_nav', 'className'),
 	Output('close_nav', 'className'),
 	Output('this_song_div', 'children'),
 	*[Output(f'rec_div_{i}', 'children') for i in range(1,11)],
+	*[Output(f'play_button_rec_{i}', 'value') for i in range(1,11)],
+	Output('umap_plot', 'children'),
+	*[Output(f'number_{i}', 'value') for i in range(len(sonufy.latent_cols))],
 	Input(component_id='search_input', component_property='value')
 	)
 def search(search_input):
 
-	if search_input is None:
+	if search_input is None or '':
 		raise PreventUpdate
 
 	try:
@@ -251,7 +307,7 @@ def search(search_input):
 				# number
 				html.H1('this song', className='artist_info'),
 
-				html.Img(className='cover_art', src=track['album']['images'][-1]['url']),
+				html.Img(className='cover_art', src=track['album']['images'][0]['url']),
 
 				# title and artist
 				html.P(className='artist_info', children=[
@@ -313,8 +369,7 @@ def search(search_input):
 
 				html.Div(id=f'rec_full_{i}', className='rec_full', children=[
 					html.Div(id=f'rec_player_{i}', className='rec_player', children=[
-						# play button
-						# like button
+						
 						]),
 					
 					html.Div(id=f'rec_info_{i}', className='rec_info', children=[
@@ -332,13 +387,13 @@ def search(search_input):
 						# similarity indexes
 						html.Div(id=f'rec_similarity_{i}', className='rec_similarity', children=[
 							html.Div(className='total_similarity similarity_index', children=[
-								'similarity: ' + str(latents.loc[i-1, 'similarity'])
+								'similarity: ' + str(round(latents.loc[i-1, 'similarity'], 2))
 								]),
 							html.Div(className='time_similarity similarity_index', children=[
-								'time similarity: ' + str(latents.loc[i-1, 'time_similarity'])
+								'time similarity: ' + str(round(latents.loc[i-1, 'time_similarity'],2))
 								]),
 							html.Div(className='freq_similarity similarity_index', children=[
-								'frequency similarity: ' + str(latents.loc[i-1, 'frequency_similarity'])
+								'frequency similarity: ' + str(round(latents.loc[i-1, 'frequency_similarity'],2))
 								])
 							]),
 
@@ -380,14 +435,101 @@ def search(search_input):
 			]
 			recs_layout.append(this_rec_layout)
 
-		umap_layout = []
+			@app.callback(
+				Output(f'play_button_rec_{i}', 'children'),
+				Input(f'play_button_rec_{i}', 'n_clicks'),
+				Input(f'play_button_rec_{i}', 'value'))
+			def test_spotify(n_clicks, uri):
+				if uri == None:
+					PreventUpdate()
 
-		return track['name'], 'sixteen', 'close', this_song_layout, *recs_layout
+				if n_clicks != None:
+					token = (auth.get_token())
+
+					spotify = spotipy.Spotify(auth=token)
+					devices = spotify.devices()
+
+					device_id = devices['devices'][0]['id']
+
+					play_uri = [f'spotify:track:{uri}']
+
+					current_track = spotify.current_user_playing_track()
+
+
+					if current_track == None:
+						spotify.start_playback(device_id=device_id, uris=play_uri)
+						print('started from scratch, now playing')
+						return 'Pause'
+					else:
+						playing = current_track['is_playing']
+						current_uri = current_track['item']['id']
+
+						if playing and current_uri == uri:
+							spotify.pause_playback()
+							print('paused')
+							return 'Play'
+						elif current_uri != uri:
+							spotify.start_playback(uris=play_uri)
+							print('played from start')
+							return 'Pause'
+						else:
+							spotify.start_playback()
+							print('resumed play')
+							return 'Pause'
+
+				else:
+					return 'Play'
+
+		######## UMAP ###########
+
+
+		# see top for umap setup
+
+		this_track_df = pd.DataFrame(this_track, columns=sonufy.latent_cols)
+		this_track_df['name'] = track['name'] + ' - ' + track['artists'][0]['name']
+		this_track_df['label'] = 2
+
+		latents['name'] = latents['track_name'] + ' - ' + latents['artist_name']
+		latents['label'] = 1
+		latents = latents[['name'] + sonufy.latent_cols + ['label']]
+
+		genres_and_tracks = pd.concat([base_genres, latents, this_track_df]).reset_index(drop=True)
+
+		genre_map_trans = genre_map.transform(genres_and_tracks[sonufy.latent_cols])
+
+		genre_map_df = pd.DataFrame(genre_map_trans, columns=['x','y'])
+		genre_map_df = pd.concat([genres_and_tracks[['name','label']], genre_map_df], axis=1)
+		genre_map_df.label = genre_map_df.label.map({0:'genre', 1:'similar song', 2:'this song'})
+		genre_map_df['annotation'] = genre_map_df.apply(lambda x: x['name'] if x['label'] == 'genre' else '', axis=1)
+
+		fig = px.scatter(genre_map_df, x='x', y='y', color='label', hover_name='name', size=[.5]*len(genre_map_df), width=800, height=600, text='annotation')
+		
+
+		fig.update_layout(
+		    margin = dict(l=0, r=0, t=0, b=0),
+		    legend=dict(
+			    yanchor="top",
+			    y=0.99,
+			    xanchor="left",
+			    x=0.01
+			),
+			xaxis = dict(visible=False),
+			yaxis = dict(visible=False)
+		)
+
+		umap_layout = [
+			dcc.Graph(figure=fig, responsive=True, config={'autosizable':True, 'frameMargins':0, 'displayModeBar':'hover'})
+		]
+
+
+		return 'sixteen', 'close', this_song_layout, *recs_layout, *list(latents.loc[1:11, 'track_id']), umap_layout, *this_track.values[0]
 
 
 	except:
 		print('error')
 		pass
+
+
 
 
 ########################## Run ##########################

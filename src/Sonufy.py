@@ -384,6 +384,13 @@ class Sonufy:
 
         #fit umap transformer
 
+        import umap.umap_ as umap
+
+        self.genre_map = umap.UMAP(n_neighbors=10, min_dist=.5).fit(self.genres[self.latent_cols])
+
+        print('UMAP embedding fit.')
+
+
     def save_db(self, save_folder):
 
         create_new_directories(save_folder)
@@ -402,6 +409,8 @@ class Sonufy:
 
 
         #save umap transformer
+
+        dump(self.genre_map, save_folder+'/genre_map.bin', compress=9)
     
     def load_db(self, save_folder):
         try:
@@ -422,6 +431,14 @@ class Sonufy:
             print('loaded scaler')
         except:
             print('Failed to load scaler.')
+
+        try:
+            self.genre_map=load(save_folder+'/genre_map.bin')
+            print('loaded umap')
+        except:
+            print('Failed to load umap.')
+
+
     
     def train(self, mel_directory, epochs, train_test_split=0.2, sample_size=None, batch_size=32):
 
@@ -505,7 +522,7 @@ class Sonufy:
 
             tracks = self._spotify.tracks(track_ids)
 
-            similarity['album_art_url'] = [tracks['tracks'][i]['album']['images'][-1]['url'] for i in range(1,len(similarity)+1)]
+            similarity['album_art_url'] = [tracks['tracks'][i]['album']['images'][0]['url'] for i in range(1,len(similarity)+1)]
 
             audio_features = self._spotify.audio_features(tracks=track_ids)
             
