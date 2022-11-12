@@ -70,48 +70,205 @@ base_genres['label'] = 0
 
 genre_map = load('model/genre_map.bin')
 
-########################## Sonufy Nav Components ##########################
+features_to_use = ['danceability', 'energy', 'key', 'loudness', 'speechiness', 'acousticness', 'instrumentalness', 'liveness', 'valence', 'tempo', 'time_signature']
 
-# start with 'open' className for css to display full screen
 uri = '2Amr61JmOUVaunLKPSe39i'
-nav = [
-	html.Div(id='basic_nav', children=[
-		# logo
-		html.Div(id='logo_header', children=[
-			html.Img(id='logo_img', src='logo.svg'),
-			html.Img(id='title_img', src='sonufy.svg', alt='Sonufy')
-		]),
-	
-		# search bar
-		dbc.Input(id="search_input", placeholder="Search for a track on Spotify", type="text", debounce=True),
-		html.Button(children='Play', id='play_button', className="togglePlay", value=uri),
-		]),
-	
 
-	html.Div(id='advanced_nav', children=[
-		html.Div(id='umap_nav', children=[
-			dcc.Graph(id='advanced_umap', responsive=True, config={'autosizable':True, 'frameMargins':0, 'displayModeBar':'hover'})
+
+########################## Layout ##########################
+
+
+
+app.layout = html.Div(id='main', children=[
+	dcc.Store(id='memo'),
+	html.Div(id='body', className='body', children=[
+
+#### SEARCH #####
+
+	html.Div(id='sonufy_nav', className='sixteen open', children=[
+
+		html.Div(id='nav_hover', className='hover'),
+
+		html.Div(id='nav_header', children=[
+			html.Div(id='basic_nav', children=[
+			# logo
+			html.Div(id='logo_header', children=[
+				html.Img(id='logo_img', src='logo.svg'),
+				html.Img(id='title_img', src='sonufy.svg', alt='Sonufy')
+			]),
+		
+			# search bar
+			dbc.Input(id="search_input", placeholder="Search for a track on Spotify", type="text", debounce=True),
+			html.Button(children='Play', id='play_button', className="togglePlay", value=uri),
+			]),
+		
+
+			html.Div(id='advanced_nav', children=[
+				html.Div(id='umap_nav', children=[
+					dcc.Graph(id='advanced_umap', responsive=True, config={'autosizable':True, 'frameMargins':0, 'displayModeBar':'hover'})
+						]),
+
+				html.Div(id='advanced_knobs', children=[
+					html.Div(className='knobs_section', children=[
+						dcc.Input(id=f'number_{j*len(sonufy.latent_cols)//4 + i}', className='advanced_num_input', step=.1, type='range', inputMode='numeric', min=-1, max=1, value=0, debounce=True) for i in range(len(sonufy.latent_cols)//4)
+						]) for j in range(4)
+					
+					])
+				])
 				]),
 
-		html.Div(id='advanced_knobs', children=[
-			html.Div(className='knobs_section', children=[
-				dcc.Input(id=f'number_{j*len(sonufy.latent_cols)//4 + i}', className='advanced_num_input', step=.1, type='range', inputMode='numeric', min=-1, max=1, value=0, debounce=True) for i in range(len(sonufy.latent_cols)//4)
-				]) for j in range(4)
+			dcc.Tabs(id='nav_tabs', value='basic', children=[
+		        dcc.Tab(label='Basic', value='basic'),
+		        dcc.Tab(label='Advanced', value='advanced'),
+		    ]),
+
+		html.Div(id='close_nav', className='close no_display')
+		]),
+
+	#### QUERY SONG #####
+
+	html.Div(id='this_song', className='sixteen', children=[
+		html.Div(id='this_hover', className='hover'),
+		html.Div(id='this_song_div', className='track_div', children=[
+		html.Div(id='this_header_div', className='this_header_div', children=[
+				
+			# number
+			# html.H1('this song', className='artist_info'),
+
+			# html.Img(className='cover_art', src=track['album']['images'][0]['url']),
+
+			# title and artist
+			html.P(className='artist_info', children=[
+				# html.Span(track['name'], className='track_name'), 
+				' by ',
+				# html.Span(track['artists'][0]['name'], className='artist')
+				]),
+			]),
+
+			html.Div(id='this_full', className='this_full', children=[
+				html.Div(id='this_player', className='this_player', children=[
+					# play button
+					# like button
+					]),
+				
+				html.Div(id='this_info', className='this_info', children=[
+					# vector similarity
+					html.Div(id='this_vector_compare', className='this_vector_compare', children=[
+
+						]),
+					# similarity indexes
+					html.Div(id='this_similarity', className='this_similarity', children=[
+
+						]),
+
+					# audio feature comparison
+					html.Div(id='this_feature_compare', className='this_feature_compare', children=[
+
+						])
+
+					])
+				])
+		]),
+		html.Div(id='close_this', className='close')
+	]),
+
+	#### RECOMMENDATION TEMPLATE #####
+
+	*[html.Div(id=f'rec_{i}', className='sixteen recs', children=[
+		html.Div(id=f'rec_{i}_hover', className='hover'),
+		html.Div(id=f'rec_div_{i}', className='track_div', children=[
+
 			
-			])
+			html.Div(id=f'rec_header_div_{i}', className='rec_header_div', children=[
+			# 	# number
+				html.H1(i),
+
+				# html.Img(className='cover_art', src=latents.loc[i-1, 'album_art_url']),
+
+			# 	# title and artist
+				# html.P(className='artist_info', children=[html.Span(latents.loc[i-1 ,'track_name']), ' by ',html.Span(latents.loc[i-1 ,'artist_name'], className='artist')]),
+				]),
+
+			html.Div(id=f'rec_full_{i}', className='rec_full', children=[
+				html.Div(id=f'rec_player_{i}', className='rec_player', children=[
+					# html.Button(children='Play', id=f'play_button_rec_{i}', className="togglePlay", value=latents.loc[i-1, 'track_id']),
+
+					]),
+				
+				html.Div(id=f'rec_info_{i}', className='rec_info', children=[
+					# vector similarity
+					html.Div(id=f'rec_vector_compare_{i}', className='rec_vector_compare', children=[
+						html.Div(className='rec_vector vector', children=[
+							# html.Div(str(round(col, 2)), className='vector_cell', style={'background':f'rgba({100*col},0,{-100*col},1)'}) for col in latents.loc[i-1, sonufy.latent_cols]
+							]),
+
+						html.Div(className='query_vector vector', children=[
+							# html.Div(str(round(col, 2)), className='vector_cell', style={'background':f'rgba({100*col},0,{-100*col},1)'}) for col in list(*this_track.values)
+							])
+							
+						]),
+					# similarity indexes
+					html.Div(id=f'rec_similarity_{i}', className='rec_similarity', children=[
+						html.Div(className='total_similarity similarity_index', children=[
+							# 'similarity: ' + str(round(latents.loc[i-1, 'similarity'], 2))
+							]),
+						html.Div(className='time_similarity similarity_index', children=[
+							# 'time similarity: ' + str(round(latents.loc[i-1, 'time_similarity'],2))
+							]),
+						html.Div(className='freq_similarity similarity_index', children=[
+							# 'frequency similarity: ' + str(round(latents.loc[i-1, 'frequency_similarity'],2))
+							])
+						]),
+
+					# audio feature comparison
+					html.Div(id=f'rec_feature_compare_{i}', className='rec_feature_compare', children=[
+							html.Div(className=f'feature_compare feature_compare_title', children=[
+								html.Div(className='query_feature query_feature_title', children=[
+									'Query'
+									]),
+
+								html.Div(className='diff_feature diff_feature_title', children=[
+									'Feature Difference'
+									]),
+
+								html.Div(className='rec_feature rec_feature_title', children=[
+									'Recommendation'
+									]),
+								]),
+
+							*[html.Div(className=f'feature_compare {feature}_compare', children=[
+								html.Div(className='query_feature', children=[
+									# audio_features[0][feature]
+									]),
+
+								html.Div(className='diff_feature', children=[
+									# html.Div(feature, className='diff_title'),
+									# html.Div(round(abs(audio_features[0][feature] - audio_features[i][feature]),2), className='diff_quant')
+									]),
+
+								html.Div(className='rec_feature', children=[
+									# audio_features[i][feature]
+									]),
+								]) for feature in features_to_use]
+						])
+
+					])
+
+				])
+		]),
+		html.Div(id=f'close_rec_{i}', className='close')
+		]) for i in range(1,11)],
+
+	#### UMAP PLOT #####
+
+	html.Div(id='umap_plot', className='umap_plot', children=[
+		html.H1('Umap Plot')
 		])
-]
+	]),
+	dash.page_container
+])
 
-
-sonufy_block = [
-	html.Div(id='nav_header', children=nav),
-
-	dcc.Tabs(id='nav_tabs', value='basic', children=[
-        dcc.Tab(label='Basic', value='basic'),
-        dcc.Tab(label='Advanced', value='advanced'),
-    ])
-]
-
+########################## CALLBACKS ##########################
 
 
 @app.callback(
@@ -149,59 +306,6 @@ def render_advanced_umap(*numbers):
 
 	return fig
 
-
-########################## Audio Player Components ##########################
-
-# play button
-
-# pause button
-
-# next button
-
-# back button
-
-# add playlist to Spotify
-
-
-
-########################## Body ##########################
-
-
-sonufy_nav = html.Div(id='sonufy_nav', className='sixteen open', children=[
-	html.Div(id='nav_hover', className='hover'),
-	*sonufy_block,
-	html.Div(id='close_nav', className='close no_display')
-	]
-	)
-
-this_song = html.Div(id='this_song', className='sixteen', children=[
-	html.Div(id='this_hover', className='hover'),
-	html.Div(id='this_song_div', className='track_div', children=[
-		html.H1('this song', id='this_title'),
-	]),
-	html.Div(id='close_this', className='close')
-])
-
-recs = [html.Div(id=f'rec_{i}', className='sixteen recs', children=[
-	html.Div(id=f'rec_{i}_hover', className='hover'),
-	html.Div(id=f'rec_div_{i}', className='track_div', children=[
-		html.Button(children='Play', id=f'play_button_rec_{i}', className="togglePlay", value=''),
-
-		]),
-	html.Div(id=f'close_rec_{i}', className='close')
-	]) for i in range(1,11)]
-
-
-umap_plot = html.Div(id='umap_plot', className='umap_plot', children=[
-	html.H1('Umap Plot')
-	])
-
-# audio_player = html.Div(id='radio', className='radio', children=[])
-
-body = [sonufy_nav, this_song]
-body.extend(recs)
-body.append(umap_plot)
-
 @app.callback(
 	Output('basic_nav', 'className'),
 	Output('advanced_nav', 'className'),
@@ -212,17 +316,6 @@ def render_content(tab):
 		return 'show', 'noshow'
 	if tab == 'advanced':
 		return 'noshow', 'show'
-
-########################## Layout ##########################
-
-
-
-app.layout = html.Div(id='main', children=[
-	dcc.Store(id='memo'),
-	html.Div(id='body', className='body', children=body),
-	dash.page_container
-])
-
 
 #player example code
 
@@ -269,18 +362,7 @@ def test_spotify(n_clicks, uri):
 		return 'Play'
 
 
-# 	token_header = get_authorization_header(token)
-
-# 	top_url = BASE_URL + 'me/top/tracks'
-
-# 	r = requests.get(top_url, headers=token_header)
-
-# 	return [str(r.json()['items'][i]['name']) for i in range(len(r.json()['items']))]
-
-
-
-########################## Functions ##########################
-
+#search
 
 @app.callback(
 	Output('sonufy_nav', 'className'),
@@ -303,139 +385,13 @@ def search(search_input):
 	features_to_use = ['danceability', 'energy', 'key', 'loudness', 'speechiness', 'acousticness', 'instrumentalness', 'liveness', 'valence', 'tempo', 'time_signature']
 	
 
-	this_song_layout = [
-		html.Div(id='this_header_div', className='this_header_div', children=[
-				
-			# number
-			html.H1('this song', className='artist_info'),
-
-			html.Img(className='cover_art', src=track['album']['images'][0]['url']),
-
-			# title and artist
-			html.P(className='artist_info', children=[
-				html.Span(track['name'], className='track_name'), 
-				' by ',
-				html.Span(track['artists'][0]['name'], className='artist')
-				]),
-
-			# cover
-
-
-			]),
-
-		html.Div(id='this_full', className='this_full', children=[
-			html.Div(id='this_player', className='this_player', children=[
-				# play button
-				# like button
-				]),
-			
-			html.Div(id='this_info', className='this_info', children=[
-				# vector similarity
-				html.Div(id='this_vector_compare', className='this_vector_compare', children=[
-
-					]),
-				# similarity indexes
-				html.Div(id='this_similarity', className='this_similarity', children=[
-
-					]),
-
-				# audio feature comparison
-				html.Div(id='this_feature_compare', className='this_feature_compare', children=[
-
-					])
-
-				])
-			])
-	]
+	this_song_layout = 
 
 	recs_layout = []
 
 	for i in range(1,11):
 
-		this_rec_layout = [
-
-			
-			html.Div(id=f'rec_header_div_{i}', className='rec_header_div', children=[
-				
-			# 	# number
-				html.H1(i),
-
-				html.Img(className='cover_art', src=latents.loc[i-1, 'album_art_url']),
-
-			# 	# title and artist
-				html.P(className='artist_info', children=[html.Span(latents.loc[i-1 ,'track_name']), ' by ',html.Span(latents.loc[i-1 ,'artist_name'], className='artist')]),
-
-
-
-				]),
-
-			html.Div(id=f'rec_full_{i}', className='rec_full', children=[
-				html.Div(id=f'rec_player_{i}', className='rec_player', children=[
-					html.Button(children='Play', id=f'play_button_rec_{i}', className="togglePlay", value=latents.loc[i-1, 'track_id']),
-
-					]),
-				
-				html.Div(id=f'rec_info_{i}', className='rec_info', children=[
-					# vector similarity
-					html.Div(id=f'rec_vector_compare_{i}', className='rec_vector_compare', children=[
-						html.Div(className='rec_vector vector', children=[
-							html.Div(str(round(col, 2)), className='vector_cell', style={'background':f'rgba({100*col},0,{-100*col},1)'}) for col in latents.loc[i-1, sonufy.latent_cols]
-							]),
-
-						html.Div(className='query_vector vector', children=[
-							html.Div(str(round(col, 2)), className='vector_cell', style={'background':f'rgba({100*col},0,{-100*col},1)'}) for col in list(*this_track.values)
-							])
-							
-						]),
-					# similarity indexes
-					html.Div(id=f'rec_similarity_{i}', className='rec_similarity', children=[
-						html.Div(className='total_similarity similarity_index', children=[
-							'similarity: ' + str(round(latents.loc[i-1, 'similarity'], 2))
-							]),
-						html.Div(className='time_similarity similarity_index', children=[
-							'time similarity: ' + str(round(latents.loc[i-1, 'time_similarity'],2))
-							]),
-						html.Div(className='freq_similarity similarity_index', children=[
-							'frequency similarity: ' + str(round(latents.loc[i-1, 'frequency_similarity'],2))
-							])
-						]),
-
-					# audio feature comparison
-					html.Div(id=f'rec_feature_compare_{i}', className='rec_feature_compare', children=[
-							html.Div(className=f'feature_compare feature_compare_title', children=[
-								html.Div(className='query_feature query_feature_title', children=[
-									'Query'
-									]),
-
-								html.Div(className='diff_feature diff_feature_title', children=[
-									'Feature Difference'
-									]),
-
-								html.Div(className='rec_feature rec_feature_title', children=[
-									'Recommendation'
-									]),
-								]),
-
-							*[html.Div(className=f'feature_compare {feature}_compare', children=[
-								html.Div(className='query_feature', children=[
-									audio_features[0][feature]
-									]),
-
-								html.Div(className='diff_feature', children=[
-									html.Div(feature, className='diff_title'),
-									html.Div(round(abs(audio_features[0][feature] - audio_features[i][feature]),2), className='diff_quant')
-									]),
-
-								html.Div(className='rec_feature', children=[
-									audio_features[i][feature]
-									]),
-								]) for feature in features_to_use]
-						])
-
-					])
-
-				])
-		]
+		this_rec_layout = 
 		recs_layout.append(this_rec_layout)
 
 		@app.callback(
@@ -534,6 +490,15 @@ def search(search_input):
 	# 	pass
 
 
+
+
+# 	token_header = get_authorization_header(token)
+
+# 	top_url = BASE_URL + 'me/top/tracks'
+
+# 	r = requests.get(top_url, headers=token_header)
+
+# 	return [str(r.json()['items'][i]['name']) for i in range(len(r.json()['items']))]
 
 
 ########################## Run ##########################
