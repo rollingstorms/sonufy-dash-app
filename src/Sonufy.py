@@ -148,7 +148,6 @@ class Sonufy:
         credentials_manager = SpotifyClientCredentials(client_id=client_id, client_secret=client_secret)
 
         self._spotify = spotipy.Spotify(client_credentials_manager=credentials_manager)
-        self.spotify = spotipy.Spotify(client_credentials_manager=credentials_manager)
 
     def load_tracks_db(self, filename):
 

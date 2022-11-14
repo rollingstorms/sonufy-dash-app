@@ -134,6 +134,10 @@ h1{font-size: 30pt}
 	filter: drop-shadow(1px 1px 10px rgb(0 0 0 / 0));
 }
 
+.open #logo_header{
+	height: 50%;
+}
+
 /*#logo_header::after{
 	content: 'x';
 	position: absolute;
@@ -165,21 +169,19 @@ h1{font-size: 30pt}
 }
 
 #search_input {
-    height: 20%;
-    padding: 5%;
+    height: 25px;
+    padding: 20px;
     border-radius: 10px;
-    max-width: 80%;
+    width: 500px;
+    max-width: 100%;
 }
 
 .open #search_input {
-    height: 50px;
-    padding: 5%;
-    border-radius: 10px;
-    font-size: 5vw;
+   
 }
 
 .open #nav_header{
-	height: 80%;
+	height: 90%;
 }
 
 .close {
@@ -204,8 +206,13 @@ h1{font-size: 30pt}
     justify-content: left;
 }
 
-#sonufy_nav .close{
-	color: black;
+#sonufy_nav .close {
+    right: 0 !important;
+    left: auto;
+}
+
+#sonufy_nav .close:after {
+    content: '>';
 }
 
 .open .close{
@@ -338,6 +345,11 @@ h1{font-size: 30pt}
     position: absolute;
     width: 100%;
     bottom: 0;
+    display: none;
+}
+
+.open #nav_tabs-parent {
+    display: block;
 }
 
 #advanced_knobs {
@@ -361,6 +373,7 @@ h1{font-size: 30pt}
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
 }
 
 #umap_nav {
