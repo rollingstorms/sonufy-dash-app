@@ -1,7 +1,6 @@
 import dash
-from dash.dependencies import Input, Output, State
 from dash import dcc
-from dash import html
+from dash import html, Input, Output, State, ctx
 import dash_bootstrap_components as dbc
 from dash.exceptions import PreventUpdate
 import dash_daq as daq
@@ -66,9 +65,18 @@ base_genres['label'] = 0
 
 genre_map = load('model/genre_map.bin')
 
+#### MISC SETUP ######
+
 features_to_use = ['danceability', 'energy', 'key', 'loudness', 'speechiness', 'acousticness', 'instrumentalness', 'liveness', 'valence', 'tempo', 'time_signature']
 
 uri = '2Amr61JmOUVaunLKPSe39i'
+
+play_button = app.get_asset_url('play_button.svg')
+pause_button = app.get_asset_url('pause_button.svg')
+like_button = app.get_asset_url('like_button.svg')
+unlike_button = app.get_asset_url('unlike_button.svg')
+next_button = app.get_asset_url('next_button.svg')
+back_button = app.get_asset_url('back_button.svg')
 
 
 ########################## Layout ##########################
@@ -162,24 +170,25 @@ app.layout = html.Div(id='main', children=[
 				]),
 			]),
 
-			html.Div(id='this_full', className='this_full', children=[
-				html.Div(id='this_player', className='this_player', children=[
+			html.Div(id='this_player', className='this_player', children=[
 					
-					# 'this_uri': 'value'
-					# 'play_button_img_this': 'src'
-					html.Div(id=f'play_button_this', className="play_button", children=[
+				# 'this_uri': 'value'
+				# 'play_button_img_this': 'src'
+				html.Div(id=f'this_play_button', className="play_button", children=[
 
-						html.Img(id='play_button_img_this'),
-						html.Data(id='this_uri', value='')
+					html.Img(id='this_play_img', src=play_button),
+					html.Data(id='this_uri', value='')
 					]),
 
-					# 'like_button_img_this': 'src'
-					html.Div(id=f'like_button_this', className="play_button", children=[
+				# 'like_button_img_this': 'src'
+				html.Div(id=f'like_button_this', className="play_button like_button", children=[
 
-						html.Img(id='like_button_img_this'),
+					html.Img(id='like_button_img_this', src=like_button),
 					]),
 
-					]),
+				]),
+
+			html.Div(id='this_full', className='this_full', children=[
 				
 				html.Div(id='this_info', className='this_info', children=[
 					# vector similarity
@@ -203,14 +212,15 @@ app.layout = html.Div(id='main', children=[
 
 						
 						*[html.Div(className=f'feature_compare {feature}_compare', children=[
-								html.Div(id=f'this_{feature}_compare', className='query_feature', children=[
+							html.Div(className='diff_feature_name', children=feature.capitalize()),
+							html.Div(id=f'this_{feature}_compare', className='query_feature', children=[
 
-									# 'this_{feature}_compare': 'children'
-									# audio_features[0][feature]
+								# 'this_{feature}_compare': 'children'
+								# audio_features[0][feature]
 
-									]),
+								]),
 
-								]) for feature in features_to_use]
+							]) for feature in features_to_use]
 						])
 
 					])
@@ -259,23 +269,24 @@ app.layout = html.Div(id='main', children=[
 
 				]),
 
-			html.Div(id=f'rec_full_{i}', className='rec_full', children=[
-				html.Div(id=f'rec_player_{i}', className='rec_player', children=[
+			html.Div(id=f'rec_player_{i}', className='rec_player', children=[
 
-					# 'rec_{i}_uri': 'value'
-					# 'play_button_img_rec_{i}': 'src'
-					html.Div(id=f'play_button_rec_{i}', className="play_button", children=[
+				# 'rec_{i}_uri': 'value'
+				# 'rec_{i}_play_img': 'src'
+				html.Div(id=f'rec_{i}_play_button', className="play_button", children=[
 
-						html.Img(id=f'play_button_img_rec_{i}'),
-						html.Data(id=f'rec_{i}_uri', value='')
+					html.Img(id=f'rec_{i}_play_img', src=play_button),
+					html.Data(id=f'rec_{i}_uri', value='')
 					]),
 
-					# 'like_button_rec_{i}': 'src'
-					html.Div(id=f'like_button_rec_{i}', className="play_button", children=[
+				# 'like_button_rec_{i}': 'src'
+				html.Div(id=f'rec_{i}_like_button', className="play_button like_button", children=[
 
-						html.Img(id=f'like_button_img_rec_{i}', src=''),
+					html.Img(id=f'rec_{i}_like_img', src=like_button),
 					]),
 				]),
+
+			html.Div(id=f'rec_full_{i}', className='rec_full', children=[
 				
 				html.Div(id=f'rec_info_{i}', className='rec_info', children=[
 					# vector similarity
@@ -340,9 +351,26 @@ app.layout = html.Div(id='main', children=[
 	#### UMAP PLOT #####
 
 	html.Div(id='umap_plot', className='umap_plot', children=[
-		html.H1('Umap Plot')
+		dcc.Graph(id='umap_plot_graph', responsive=True, config={'autosizable':True, 'frameMargins':0, 'displayModeBar':'hover'})
 		])
 	]),
+
+	##### AUDIO PLAYER LAYOUT #######
+
+	html.Div(id='audio_player', className='audio_player', children=[
+		html.Div(id='track_info', className='player_track_info', children=[]),
+		html.Div(id='player_back', className='player_back', children=[
+			html.Img(id='back_play_img', src=back_button)
+			]),
+		html.Div(id='player_play', className='player_play', children=[
+			html.Img(id='player_play_img', src=play_button),
+			html.Data(id=f'player_uri', value='')
+			]),
+		html.Div(id='player_next', className='player_next', children=[
+			html.Img(id='next_play_img', src=next_button)
+			])
+
+		])
 
 ])
 
@@ -486,8 +514,8 @@ def search(search_input):
 		
 		data = dict()
 
-		data['query'] = {
-		    'id': 'query',
+		data['this'] = {
+		    'id': 'this',
 		    'track_name': track['name'],
 		    'track_artist':track['artists'][0]['name'],
 		    'cover_url':track['album']['images'][0]['url'],
@@ -594,13 +622,13 @@ def populate_query(data):
 	return_array = []
 
 	for field in query_fields.keys():
-		return_array.append(data['query'][query_fields[field]['input']])
+		return_array.append(data['this'][query_fields[field]['input']])
 
 	for field in query_feature_fields.keys():
-		return_array.append(data['query']['audio_features'][query_feature_fields[field]['input']])
+		return_array.append(data['this']['audio_features'][query_feature_fields[field]['input']])
 
 	for field in query_rec_feature_fields.keys():
-		return_array.append(data['query']['audio_features'][query_rec_feature_fields[field]['input']])
+		return_array.append(data['this']['audio_features'][query_rec_feature_fields[field]['input']])
 
 	return return_array
 
@@ -682,7 +710,7 @@ def populate_recs(data):
 
 			rec_feature = rec['audio_features'][rec_feature_diff_fields[rec['id']][field]['input']]
 
-			query_feature = data['query']['audio_features'][rec_feature_diff_fields[rec['id']][field]['input']]
+			query_feature = data['this']['audio_features'][rec_feature_diff_fields[rec['id']][field]['input']]
 
 			diff = round(abs(rec_feature - query_feature),2)
 
@@ -691,8 +719,181 @@ def populate_recs(data):
 
 	return return_array
 
+
+#### AUDIO PLAYER ######
+
+
+def play_pause_skip(token, uri, track_id, player_id, button_type):
 	
+	spotify = spotipy.Spotify(auth=token)
+	devices = spotify.devices()
+
+	device_id = devices['devices'][0]['id']
+
+	if len(uri) == 1:
+		play_uri = [uri]
+	else:
+		play_uri = uri
+
+	current_track = spotify.current_user_playing_track()
+
+	print(current_track)
+
+	if button_type == 'play':
+		if current_track == None:
+			spotify.start_playback(device_id=device_id, uris=play_uri)
+			return 'started'
+		else:
+
+			playing = current_track['is_playing']
+			current_uri = current_track['item']['id']
+
+			if playing and (current_uri == track_id or player_id == 'player'):
+				spotify.pause_playback(device_id=device_id)
+				return 'paused'
+			elif current_uri != track_id and player_id != 'player':
+				spotify.start_playback(device_id=device_id, uris=play_uri)
+				return 'started'
+			else:
+				spotify.start_playback(device_id=device_id)
+				return 'resumed'
+	elif button_type == 'next':
+		spotify.next_track()
+		return 'next'
+	elif button_type ==  'back':
+		spotify.previous_track()
+		return 'back'
+	else:
+		return 'error'
+
+
+
+
+
+ids = ['this'] + [f'rec_{i}' for i in range(1,11)] + ['player']
+
+play_button_fields = {f'{id_name}_play_img':{'output':'src', 'input':'n_clicks'} for id_name in ids}
+
+
 	
+@app.callback(
+	*[Output(field, play_button_fields[field]['output']) for field in play_button_fields],
+	*[Input(field, play_button_fields[field]['input']) for field in play_button_fields],
+	Input('back_play_img', 'n_clicks'),
+	Input('next_play_img', 'n_clicks'),
+	State('memo', 'data'),
+	)
+def test_play_pause(*args):
+
+	data = args[-1]
+
+	n_clicks = args[:-1]
+
+	#dictionary for the key -> img output
+
+	if n_clicks[0] == None:
+		raise PreventUpdate()
+
+	token = (auth.get_token())
+
+	button_clicked = ctx.triggered_id
+
+	button_id = button_clicked.split('_play_img')[0]
+
+
+	uris = {key: data[key]['track_uri'] for key in data.keys()}
+
+	ids = {key: data[key]['track_id'] for key in data.keys()}
+
+	uris_list = [data[key]['track_uri'] for key in data.keys()]
+
+	if button_id in ['player', 'next', 'back']:
+
+		track_id = 'controls'
+
+		uri = uris_list
+		clicked_index = -1
+		
+		if button_id == 'player':
+			button_type = 'play'
+		elif button_id == 'next':
+			button_type = 'next'
+		elif button_id == 'back':
+			button_type = 'back'
+		else:
+			button_type = 'play'
+
+	else:
+
+		track_id = ids[button_id]
+		button_type = 'play'
+
+		clicked_index = list(play_button_fields.keys()).index(button_clicked)
+		uri = uris_list[clicked_index:] + uris_list[:clicked_index]
+		
+
+	print(uri)
+
+	status = play_pause_skip(token, uri, track_id, button_id, button_type)
+
+	print(status)
+
+	buttons = [play_button for _ in range(len(play_button_fields.keys()))]
+
+	if status == 'started' or status == 'resumed' and clicked_index >= 0:
+		buttons[clicked_index] = pause_button
+		buttons[-1] = pause_button	
+	elif clicked_index <= 0: 
+		buttons[-1] = pause_button
+
+	return buttons
+
+
+
+#### UMAP PLOT ######
+
+@app.callback(
+	Output('umap_plot_graph', 'figure'),
+	Input('memo', 'data'))
+def plot_umap(data):
+
+	if data == None:
+		raise PreventUpdate()
+
+	latents = pd.DataFrame([data[key]['latent_vector'] for key in data.keys()])
+	latents['name'] = pd.DataFrame([data[key]['track_name'] + ' - ' + data[key]['track_artist'] for key in data.keys()])
+	latents['label'] = pd.Series([1] + [2 for _ in range(len(data.keys())-1)])
+
+	genres_and_tracks = pd.concat([base_genres, latents]).reset_index(drop=True)
+
+	genre_map_trans = genre_map.transform(genres_and_tracks[sonufy.latent_cols])
+
+	genre_map_df = pd.DataFrame(genre_map_trans, columns=['x','y'])
+	genre_map_df = pd.concat([genres_and_tracks[['name','label']], genre_map_df], axis=1)
+	genre_map_df.label = genre_map_df.label.map({0:'genre', 1:'similar song', 2:'this song'})
+	genre_map_df['annotation'] = genre_map_df.apply(lambda x: x['name'] if x['label'] == 'genre' else '', axis=1)
+
+	fig = px.scatter(genre_map_df, x='x', y='y', color='label', hover_name='name', size=[.5]*len(genre_map_df), width=800, height=600, text='annotation')
+	
+
+	fig.update_layout(
+	    margin = dict(l=0, r=0, t=0, b=0),
+	    legend=dict(
+		    yanchor="top",
+		    y=0.99,
+		    xanchor="left",
+		    x=0.01
+		),
+		xaxis = dict(visible=False),
+		yaxis = dict(visible=False)
+	)
+
+	return fig
+
+
+
+
+
 #search
 
 # @app.callback(
@@ -808,8 +1009,7 @@ def populate_recs(data):
 # 	)
 
 # 	umap_layout = [
-# 		dcc.Graph(figure=fig, responsive=True, config={'autosizable':True, 'frameMargins':0, 'displayModeBar':'hover'})
-# 	]
+# 		]
 	
 # 	print(len(['sixteen', 'close', this_song_layout, *recs_layout, *list(latents.loc[:, 'track_id']), umap_layout, *this_track.values[0]]))
 
@@ -825,4 +1025,4 @@ def populate_recs(data):
 ########################## Run ##########################
 if __name__ == "__main__":
     debug = config.debug
-    app.run_server(debug=debug, host=config.host, port=config.port)
+    app.run_server(debug=True, host=config.host, port=config.port)
