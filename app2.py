@@ -11,8 +11,6 @@ import pandas as pd
 
 from src.Sonufy import *
 
-import visdcc
-
 import plotly_express as px
 import plotly.graph_objs as go
 
@@ -21,8 +19,6 @@ from pyarrow import feather
 import requests
 
 import spotipy
-
-from time import sleep
 
 BASE_URL = 'https://api.spotify.com/v1/'
 AUTH_URL = "https://accounts.spotify.com/authorize"
@@ -81,7 +77,7 @@ uri = '2Amr61JmOUVaunLKPSe39i'
 
 app.layout = html.Div(id='main', children=[
 	dcc.Location(id='location_bar'),
-	dcc.Store(id='memo'),
+	dcc.Store(id='memo', data=None),
 	html.Div(id='test_div', children=[]),
 	html.Div(id='body', className='body', children=[
 
@@ -235,6 +231,7 @@ app.layout = html.Div(id='main', children=[
 
 
 	*[html.Div(id=f'rec_{i}', className='sixteen recs', children=[
+		dcc.Store(id=f'rec_{i}_data'),
 		html.Div(id=f'rec_{i}_hover', className='hover'),
 		html.Div(id=f'rec_div_{i}', className='track_div', children=[
 
@@ -322,18 +319,14 @@ app.layout = html.Div(id='main', children=[
 								]),
 
 							*[html.Div(className=f'feature_compare {feature}_compare', children=[
-								html.Div(className='query_feature', children=[
-									# audio_features[0][feature]
-									]),
+								html.Div(id=f'rec_{i}_{feature}_compare_query', className='query_feature', children=[]),
 
-								html.Div(className='diff_feature', children=[
-									# html.Div(feature, className='diff_title'),
-									# html.Div(round(abs(audio_features[0][feature] - audio_features[i][feature]),2), className='diff_quant')
+								html.Div(className='feature_diff_container', children=[
+									html.Div(className='diff_feature_name', children=feature.capitalize()),
+									html.Div(id=f'rec_{i}_{feature}_diff',className='diff_feature', children=[]),
 									]),
-
-								html.Div(className='rec_feature', children=[
-									# audio_features[i][feature]
-									]),
+								
+								html.Div(id=f'rec_{i}_{feature}_compare', className='rec_feature', children=[]),
 								]) for feature in features_to_use]
 						])
 
@@ -484,7 +477,7 @@ def test_spotify(n_clicks, uri):
 def search(search_input):
 
 	if search_input is None or '':
-		raise PreventUpdate
+		raise PreventUpdate()
 
 	try:
 		track, latents, this_track, audio_features = sonufy.search_for_recommendations(search_input, get_time_and_freq=True)
@@ -510,8 +503,8 @@ def search(search_input):
 		}
 
 		for i in range(10):
-			data[f'rec_{i}'] = {
-		    'id': f'rec_{i}',
+			data[f'rec_{i+1}'] = {
+		    'id': f'rec_{i+1}',
 		    'track_name': latents.loc[i, 'track_name'],
 		    'track_artist': latents.loc[i, 'artist_name'],
 		    'cover_url': latents.loc[i, 'album_art_url'],
@@ -545,7 +538,7 @@ def search(search_input):
 def test_memo(data):
 
 	if data == None:
-		PreventUpdate
+		raise PreventUpdate()
 
 	return None#str(data)
 
@@ -558,7 +551,7 @@ def test_memo(data):
 def open_main_tab(data, search_input):
 
 	if search_input is None or '':
-		raise PreventUpdate
+		raise PreventUpdate()
 
 	return 'sixteen', 'close'
 
@@ -580,18 +573,23 @@ query_fields = {
 
 query_feature_fields = {f'this_{feature}_compare': {'input': feature, 'output':'children'} for feature in features_to_use}
 	
+query_rec_feature_fields = {f'rec_{i}_{feature}_compare_query': {'input': feature, 'output':'children'} for i in range(1,11) for feature in features_to_use}
 
-query_vector_fields = {'this_vector_compare_query_{i}': {'input': sonufy.latent_cols[i], 'output':['style','children']} for i in range(len(sonufy.latent_cols))}
+query_vector_fields = {f'this_vector_compare_query_{i}': {'input': sonufy.latent_cols[i], 'output':['style','children']} for i in range(len(sonufy.latent_cols))}
+
+
 
 @app.callback(
 	*[Output(field, query_fields[field]['output']) for field in query_fields.keys()],
 	*[Output(field, query_feature_fields[field]['output']) for field in query_feature_fields.keys()],
+	*[Output(field, query_rec_feature_fields[field]['output']) for field in query_rec_feature_fields.keys()],
 	# *[Output(field, query_vector_fields[field]['output'], for field in query_vector_fields.keys())],
 	Input('memo', 'data')
 	)
 def populate_query(data):
+
 	if data == None:
-		PreventUpdate
+		raise PreventUpdate()
 
 	return_array = []
 
@@ -601,21 +599,16 @@ def populate_query(data):
 	for field in query_feature_fields.keys():
 		return_array.append(data['query']['audio_features'][query_feature_fields[field]['input']])
 
+	for field in query_rec_feature_fields.keys():
+		return_array.append(data['query']['audio_features'][query_rec_feature_fields[field]['input']])
+
 	return return_array
 
 
 ## Recommendations' Fields ##
 
-
-# 'rec_{i}_song_cover': 'src'
-# 'rec_{i}_name': 'children'
-# 'rec_{i}_artist': 'children'
-# 'rec_{i}_uri': 'value'
-# 'rec_{i}_similarity': 'children'
-# 'rec{i}_time_similarity': 'children'
-# 'rec{i}_freq_similarity': 'children'
-
-rec_fields = [{
+rec_fields = dict()
+rec_fields = {f'rec_{i}' : {
 	f'rec_{i}_song_cover': {'input': 'cover_url',
 						'output':'src'},
 	f'rec_{i}_name': {'input': 'track_name',
@@ -624,43 +617,82 @@ rec_fields = [{
 					'output':'children'},
 	f'rec_{i}_uri': {'input': 'track_uri',
 				'output':'value'},
-} for i in range(10)]
+} for i in range(1,11)}
 
 
-rec_feature_fields = [
-	{f'rec_{i}_{feature}_compare': {'input': feature, 'output':'children'} for feature in features_to_use} for i in range(10)
-]
+rec_feature_fields = {
+	f'rec_{i}': {
+		f'rec_{i}_{feature}_compare': {'input': feature, 'output':'children'}
+			for feature in features_to_use }
+		for i in range(1,11)
+		}
+
+rec_feature_diff_fields= {
+	f'rec_{i}': {
+		f'rec_{i}_{feature}_diff': {'input': feature, 'output':'children'}
+			for feature in features_to_use }
+		for i in range(1,11)
+		}
+
+rec_vector_fields = {
+	f'rec_{i}' : {'this_vector_compare_query_{j}': {'input': sonufy.latent_cols[i], 'output':['style','children']} for j in range(len(sonufy.latent_cols))} for i in range(10)
+}
+
+
+
+
+@app.callback(
+	*[Output(field, rec_fields[key][field]['output']) for key in rec_fields.keys() for field in rec_fields[key].keys()],
+	*[Output(field, rec_feature_fields[key][field]['output']) for key in rec_fields.keys() for field in rec_feature_fields[key].keys()],
+	*[Output(field, rec_feature_diff_fields[key][field]['output']) for key in rec_fields.keys() for field in rec_feature_diff_fields[key].keys()],
+	# *[Output(field, rec_vector_fields[field]['output'], for field in rec_vector_fields.keys())],
+	Input('memo', 'data'))
+def populate_recs(data):
+
+	if data == None:
+		raise PreventUpdate()
+
+	return_array = []
+
+	# main fields
+
+	for i in range(1,11):
+
+		rec = data[f'rec_{i}']
+
+		for field in rec_fields[rec['id']].keys():
+			return_array.append(rec[rec_fields[rec['id']][field]['input']])
+
+	# feature fields
+
+	for i in range(1,11):
+
+		rec = data[f'rec_{i}']
+
+		for field in rec_feature_fields[rec['id']].keys():
+			return_array.append(rec['audio_features'][rec_feature_fields[rec['id']][field]['input']])
+
+	# feature diff
+
+	for i in range(1,11):
+
+		rec = data[f'rec_{i}']
+
+		for field in rec_feature_diff_fields[rec['id']].keys():
+
+			rec_feature = rec['audio_features'][rec_feature_diff_fields[rec['id']][field]['input']]
+
+			query_feature = data['query']['audio_features'][rec_feature_diff_fields[rec['id']][field]['input']]
+
+			diff = round(abs(rec_feature - query_feature),2)
+
+			return_array.append(diff)
+
+
+	return return_array
+
 	
-
-# rec_vector_fields = [{'this_vector_compare_query_{j}': {'input': sonufy.latent_cols[i], 'output':['style','children']} for j in range(len(sonufy.latent_cols))} for i in range(10)
-# ]
-
-
-
-for i in range(10):
-
-	@app.callback(
-		*[Output(field, rec_fields[i][field]['output']) for field in rec_fields[i].keys()],
-		*[Output(field, rec_feature_fields[i][field]['output']) for field in rec_feature_fields[i].keys()],
-		# *[Output(field, rec_vector_fields[field]['output'], for field in rec_vector_fields.keys())],
-		Input('memo', 'data')
-		)
-	def populate_rec(data):
-		if data == None:
-			PreventUpdate
-
-		return_array = []
-
-		for field in query_fields.keys():
-			return_array.append(data[f'rec_{i}'][rec_fields[i][field]['input']])
-
-		for field in query_feature_fields.keys():
-			return_array.append(data[f'rec_{i}']['audio_features'][rec_feature_fields[i][field]['input']])
-
-		return return_array
-
-
-
+	
 #search
 
 # @app.callback(
@@ -788,16 +820,6 @@ for i in range(10):
 	# 	print('error')
 	# 	pass
 
-
-
-
-# 	token_header = get_authorization_header(token)
-
-# 	top_url = BASE_URL + 'me/top/tracks'
-
-# 	r = requests.get(top_url, headers=token_header)
-
-# 	return [str(r.json()['items'][i]['name']) for i in range(len(r.json()['items']))]
 
 
 ########################## Run ##########################
