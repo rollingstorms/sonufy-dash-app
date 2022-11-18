@@ -305,10 +305,10 @@ app.layout = html.Div(id='main', children=[
 						html.Div(id=f'rec_{i}_similarity', className='total_similarity similarity_index', children=[
 							# 'similarity: ' + str(round(latents.loc[i-1, 'similarity'], 2))
 							]),
-						html.Div(id=f'rec{i}_time_similarity', className='time_similarity similarity_index', children=[
+						html.Div(id=f'rec_{i}_time_similarity', className='time_similarity similarity_index', children=[
 							# 'time similarity: ' + str(round(latents.loc[i-1, 'time_similarity'],2))
 							]),
-						html.Div(id=f'rec{i}_freq_similarity', className='freq_similarity similarity_index', children=[
+						html.Div(id=f'rec_{i}_freq_similarity', className='freq_similarity similarity_index', children=[
 							# 'frequency similarity: ' + str(round(latents.loc[i-1, 'frequency_similarity'],2))
 							])
 						]),
@@ -539,11 +539,9 @@ def search(search_input):
 		    'track_id': latents.loc[i, 'track_id'],
 		    'track_uri': latents.loc[i, 'track_uri'],
 		    'release_date': latents.loc[i, 'release_date'],
-		    'similarity':{
-		    	'similarity': latents.loc[i, 'similarity'],
-		    	'time_similarity': latents.loc[i, 'time_similarity'],
-		    	'freq_similarity': latents.loc[i, 'frequency_similarity']
-		    	},
+	    	'similarity': latents.loc[i, 'similarity'],
+	    	'time_similarity': latents.loc[i, 'time_similarity'],
+	    	'freq_similarity': latents.loc[i, 'frequency_similarity'],
 		    'audio_features':{
 		        feature: audio_features[i+1][feature] for feature in features_to_use
 		    	},
@@ -645,6 +643,12 @@ rec_fields = {f'rec_{i}' : {
 					'output':'children'},
 	f'rec_{i}_uri': {'input': 'track_uri',
 				'output':'value'},
+	f'rec_{i}_similarity': {'input': 'similarity',
+				'output':'children'},
+	f'rec_{i}_time_similarity': {'input': 'time_similarity',
+				'output':'children'},
+	f'rec_{i}_freq_similarity': {'input': 'freq_similarity',
+				'output':'children'},
 } for i in range(1,11)}
 
 
@@ -800,7 +804,6 @@ def test_play_pause(*args):
 
 	button_id = button_clicked.split('_play_img')[0]
 
-
 	uris = {key: data[key]['track_uri'] for key in data.keys()}
 
 	ids = {key: data[key]['track_id'] for key in data.keys()}
@@ -808,6 +811,8 @@ def test_play_pause(*args):
 	uris_list = [data[key]['track_uri'] for key in data.keys()]
 
 	if button_id in ['player', 'next', 'back']:
+
+		#need to change player pause on click
 
 		track_id = 'controls'
 
@@ -860,9 +865,9 @@ def plot_umap(data):
 	if data == None:
 		raise PreventUpdate()
 
-	latents = pd.DataFrame([data[key]['latent_vector'] for key in data.keys()])
-	latents['name'] = pd.DataFrame([data[key]['track_name'] + ' - ' + data[key]['track_artist'] for key in data.keys()])
-	latents['label'] = pd.Series([1] + [2 for _ in range(len(data.keys())-1)])
+	latents = pd.DataFrame([data[key]['latent_vector'] for key in list(data.keys())[::-1]])
+	latents['name'] = pd.DataFrame([data[key]['track_name'] + ' - ' + data[key]['track_artist'] for key in list(data.keys())[::-1]])
+	latents['label'] = pd.Series([1 for _ in range(len(data.keys())-1)] + [2])
 
 	genres_and_tracks = pd.concat([base_genres, latents]).reset_index(drop=True)
 
