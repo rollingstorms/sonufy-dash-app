@@ -2,9 +2,26 @@ h1{font-size: 30pt}
 
 /* Desktop Arrangment */
 
+body{
+	font-family: zeitung-mono, sans-serif;
+	box-sizing: border-box;
+    margin: 0;
+    display: inline-block;
+}
+
+input {
+    margin: 3%;
+    padding: 3%;
+    border: none;
+    border-radius: 10px;
+    padding: 10px;
+    font-family: 'zeitung-mono';
+    background: #f0f0ff;
+}
+
 .body{
 	width: 100%;
-	height: 92%;
+	height: 90%;
 	display: flex;
 	position: fixed;
 	background: white;
@@ -13,9 +30,8 @@ h1{font-size: 30pt}
 .sixteen {
     width: 23%;
     height: 23%;
-    margin: 1vh 1vw;
+    margin: 1% 1%;
     border-radius: 1vw;
-    padding: 1%;
     position: absolute;
     text-align: center;
     overflow: hidden;
@@ -105,7 +121,7 @@ h1{font-size: 30pt}
     height: 48%;
     border-radius: 1vw;
     position: absolute;
-    margin: 1vh 1vw;
+    margin: 1% 1%;
 }
 
 .sixteen, #umap_plot{
@@ -170,11 +186,9 @@ h1{font-size: 30pt}
 }
 
 #search_input {
-    height: 25px;
-    padding: 20px;
     border-radius: 10px;
-    width: 500px;
-    max-width: 100%;
+    width: 400px;
+    max-width: 88%;
 }
 
 .open #search_input {
@@ -186,7 +200,7 @@ h1{font-size: 30pt}
 }
 
 .close {
-	color: black;
+	color: #3C00FF;
     width: 7%;
     height: 100%;
     position: fixed;
@@ -218,6 +232,7 @@ h1{font-size: 30pt}
 
 .open .close{
 	display: block;
+	z-index: 1000;
 }
 
 .hover {
@@ -249,32 +264,50 @@ h1{font-size: 30pt}
 .this_header_div, .rec_header_div {
     display: flex;
     align-items: center;
-    color: white;
+    width: 92%;
+    height: 92%;
+    padding: 1vh 1vw;
 }
 
 .this_header_div > *, .rec_header_div > *  {
     width: 100%;
 }
 
-.cover_art {
-    object-fit: cover;
+.this_full, .rec_full {
+    display: none;
+}
+
+.open .this_full, .open .rec_full {
+    display: block;
+    width: 100%;
+}
+
+.track_div {
     width: 100%;
     height: 100%;
-    position: absolute;
-    top: 0;
-    left: 0;
+    background: white;
+    border-radius: 1vw;
+    display: flex;
+    align-items: center;
+}
+
+.cover_art {
+    width: 100%;
+    object-fit: cover;
+    border-radius: 8%;
+    box-shadow: 2px 2px 7px rgb(0 0 0 / 40%);
 }
 
 .open .cover_art {
-    position: relative;
-    width: 50%;
-    height: 50%;
-    border-radius: 50px;
-    margin: 25px 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 12px;
 }
 
 .open .this_header_div, .open .rec_header_div {
     color: black;
+    flex-direction: column;
+    width: 100%;
 }
 
 .rec_full {
@@ -299,29 +332,45 @@ h1{font-size: 30pt}
 }
 
 .rec_vector_compare {
-    height: 20vw;
+    
 }
 
-.track_div {
-    width: 98%;
-    margin: 1%;
-    background: white;
-    border-radius: 1vw;
-}
 
 .open .track_div {
-    width: 91%;
-    left: 7%;
-    position: absolute;
+    width: 88%;
+    height: 88%;
+    display: flex;
+    justify-content: space-evenly;
+    align-items: center;
+    margin: auto;
+    padding: 6vh 6vw;
 }
 
 .artist_info {
     z-index: 1;
+    color: #3C00FF;
+    font-weight: bold;
+    width: 100%;
+}
+
+.open .artist_info {
+    position: absolute;
+    width: 50%;
+    height: 33%;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    font-size: 30pt;
+    left: 3%;
+    bottom: 3%;
+    justify-content: space-between;
+    text-align: left;
 }
 
 .rec_similarity {
     display: flex;
     width: 100%;
+    flex-direction: column;
 }
 
 .rec_similarity > div {
@@ -393,20 +442,18 @@ button {
 
 
 .play_button {
-    width: 25px;
     cursor: pointer;
-    z-index: 999;
+    z-index: 3;
+    position: absolute;
+    width: 12%;
+    filter: drop-shadow(4px 4px 4px rgb(0 0 0 / 60%));
 }
 
 .this_player, .rec_player {
     display: flex;
-    width: 88%;
     align-items: center;
-    justify-content: right;
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    margin: 6% 6%;
+    justify-content: center;
+    padding-right: 10px;
 }
 
 #audio_player {
@@ -421,9 +468,8 @@ button {
 }
 
 .player_play, .player_back, .player_next{
-    height: 8vh;
-    width: 8vh;
-    padding: 1vh;
+    height: 7vh;
+    width: 7vh;
     cursor: pointer;
 }
 
@@ -433,22 +479,59 @@ button {
 
 .open .rec_player, .open .this_player {
     position: relative;
-    justify-content: space-around;
-    width: 25%;
-    margin: auto;
+    padding: 0;
+    width: 90%;
 }
 
 .open .play_button {
     width: 60px;
+    padding: 20px;
+    left: 0;
 }
 
 .open .like_button {
     display: block;
+    left: auto;
+    right: 0;
 }
 
 .like_button {
     display: none;
 }
 
+.number {
+    position: absolute;
+    right: 15px;
+    width: 50%;
+    font-size: 90pt;
+    font-weight: bold;
+    line-height: 1.2em;
+    color: #3C00FF;
+    opacity: .27;
+    bottom: 10%;
+    letter-spacing: -30pt;
+}
+
+.open .number {
+    width: 20%;
+    height: 100%;
+    top: 0;
+    right: 0;
+    font-size: 26vw;
+    line-height: 0.8em;
+    z-index: 10;
+    text-align: right;
+    letter-spacing: -30pt;
+    padding-right: 40px;
+}
+
+.rec_feature_compare {
+    display: none;
+}
+
+.similarity_index {
+    font-size: 3vw;
+    font-weight: bold;
+}
 
 

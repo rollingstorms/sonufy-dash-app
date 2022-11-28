@@ -40,7 +40,7 @@ def get_authorization_header(access_token):
 ########################## Setup ##########################
 
 # App Instance
-app = dash.Dash(name=config.name, assets_folder="static", external_scripts=['https://code.jquery.com/jquery-3.6.1.slim.min.js'], external_stylesheets=[dbc.themes.YETI], server= server, suppress_callback_exceptions=True)
+app = dash.Dash(name=config.name, assets_folder="static", external_scripts=['https://code.jquery.com/jquery-3.6.1.slim.min.js'], external_stylesheets=[ 'https://use.typekit.net/exn0jge.css'], server= server, suppress_callback_exceptions=True)
 app.title = config.name
 
 
@@ -67,7 +67,7 @@ genre_map = load('model/genre_map.bin')
 
 #### MISC SETUP ######
 
-features_to_use = ['danceability', 'energy', 'key', 'loudness', 'speechiness', 'acousticness', 'instrumentalness', 'liveness', 'valence', 'tempo', 'time_signature']
+features_to_use = ['danceability', 'energy', 'loudness', 'speechiness', 'acousticness', 'instrumentalness', 'liveness', 'valence', 'tempo']
 
 uri = '2Amr61JmOUVaunLKPSe39i'
 
@@ -145,48 +145,48 @@ app.layout = html.Div(id='main', children=[
 	html.Div(id='this_song', className='sixteen', children=[
 		html.Div(id='this_hover', className='hover'),
 		html.Div(id='this_song_div', className='track_div', children=[
-		html.Div(id='this_header_div', className='this_header_div', children=[
+			html.Div(id='this_header_div', className='this_header_div', children=[
+
+				# 'this_song_cover': 'src'
+
+				html.Div(id='this_player', className='this_player', children=[
+
+					html.Img(id='this_song_cover', className='cover_art', src=''),
+					# src = track['album']['images'][0]['url']
 				
-			# number
-			html.H1('this song', className='artist_info'),
+						
+					# 'this_uri': 'value'
+					# 'play_button_img_this': 'src'
+					html.Div(id=f'this_play_button', className="play_button", children=[
 
-			# 'this_song_cover': 'src'
-			html.Img(id='this_song_cover', className='cover_art', src=''),
-			# src = track['album']['images'][0]['url']
-			
+						html.Img(id='this_play_img', src=play_button),
+						html.Data(id='this_uri', value='')
+						]),
 
-			# title and artist
-			html.P(className='artist_info', children=[
+					# 'like_button_img_this': 'src'
+					html.Div(id=f'like_button_this', className="play_button like_button", children=[
 
-				# 'this_name': 'children'
-				html.Div(id='this_name', className='track_name'), 
-				# children = track['name']
+						html.Img(id='like_button_img_this', src=like_button),
+						]),
 
-				html.Div(className='by', children='by'),
-
-				# 'this_artist': 'children'
-				html.Div(id='this_artist', className='artist')
-				# children = track['artists'][0]['name']
-				]),
-			]),
-
-			html.Div(id='this_player', className='this_player', children=[
-					
-				# 'this_uri': 'value'
-				# 'play_button_img_this': 'src'
-				html.Div(id=f'this_play_button', className="play_button", children=[
-
-					html.Img(id='this_play_img', src=play_button),
-					html.Data(id='this_uri', value='')
 					]),
 
-				# 'like_button_img_this': 'src'
-				html.Div(id=f'like_button_this', className="play_button like_button", children=[
-
-					html.Img(id='like_button_img_this', src=like_button),
-					]),
+				# title and artist
 
 				]),
+
+			html.Div(className='artist_info', children=[
+
+					# 'this_name': 'children'
+					html.Div(id='this_name', className='track_name'), 
+					# children = track['name']
+
+					html.Div(className='by', children='by'),
+
+					# 'this_artist': 'children'
+					html.Div(id='this_artist', className='artist')
+					# children = track['artists'][0]['name']
+					]),
 
 			html.Div(id='this_full', className='this_full', children=[
 				
@@ -204,27 +204,12 @@ app.layout = html.Div(id='main', children=[
 							])
 						]),
 
-					# audio feature comparison
-					html.Div(id='this_feature_compare', className='this_feature_compare', children=[
-						html.Div(className='query_feature query_feature_title', children=[
-									'Query'
-									]),
-
-						
-						*[html.Div(className=f'feature_compare {feature}_compare', children=[
-							html.Div(className='diff_feature_name', children=feature.capitalize()),
-							html.Div(id=f'this_{feature}_compare', className='query_feature', children=[
-
-								# 'this_{feature}_compare': 'children'
-								# audio_features[0][feature]
-
-								]),
-
-							]) for feature in features_to_use]
+					]),
+				html.Div(id='this_feature_graph_div', className='rec_feature_compare_graph', children=[
+						dcc.Graph(id='this_feature_graph', className='rec_feature_graph')
 						])
 
 					])
-				])
 		]),
 		html.Div(id='close_this', className='close')
 	]),
@@ -246,45 +231,51 @@ app.layout = html.Div(id='main', children=[
 		html.Div(id=f'rec_div_{i}', className='track_div', children=[
 
 			
+
+			
 			html.Div(id=f'rec_header_div_{i}', className='rec_header_div', children=[
-			# 	# number
-				html.H1(i),
+			
 
+				html.Div(id=f'rec_player_{i}', className='rec_player', children=[
+
+					html.Img(id=f'rec_{i}_song_cover', className='cover_art', src=''),
+					# src = latents.loc[i-1, 'album_art_url']
+
+					# 'rec_{i}_uri': 'value'
+					# 'rec_{i}_play_img': 'src'
+					html.Div(id=f'rec_{i}_play_button', className="play_button", children=[
+
+						html.Img(id=f'rec_{i}_play_img', src=play_button),
+						html.Data(id=f'rec_{i}_uri', value='')
+						]),
+
+					# 'like_button_rec_{i}': 'src'
+					html.Div(id=f'rec_{i}_like_button', className="play_button like_button", children=[
+
+						html.Img(id=f'rec_{i}_like_img', src=like_button),
+						]),
+				]),
+				
+				]),
 				# 'rec_{i}_song_cover': 'src'
-				html.Img(id=f'rec_{i}_song_cover', className='cover_art', src=''),
-				# src = latents.loc[i-1, 'album_art_url']
 
-				html.P(className='artist_info', children=[
+			html.Div(className='artist_info', children=[
 
-					# 'rec_{i}_name': 'children'
-					html.Div(id=f'rec_{i}_name', className='track_name'),
-					# children = latents.loc[i-1 ,'track_name'] 
+				# 'rec_{i}_name': 'children'
+				html.Div(id=f'rec_{i}_name', className='track_name'),
+				# children = latents.loc[i-1 ,'track_name'] 
 
-					html.Div(className='by', children='by'),
+				html.Div(className='by', children='by'),
 
-					# 'rec_{i}_artist': 'children'
-					html.Div(id=f'rec_{i}_artist', className='artist')
-					# children = latents.loc[i-1 ,'artist_name']
-					])
+				# 'rec_{i}_artist': 'children'
+				html.Div(id=f'rec_{i}_artist', className='artist'),
+				# children = latents.loc[i-1 ,'artist_name']
 
+				
 				]),
 
-			html.Div(id=f'rec_player_{i}', className='rec_player', children=[
-
-				# 'rec_{i}_uri': 'value'
-				# 'rec_{i}_play_img': 'src'
-				html.Div(id=f'rec_{i}_play_button', className="play_button", children=[
-
-					html.Img(id=f'rec_{i}_play_img', src=play_button),
-					html.Data(id=f'rec_{i}_uri', value='')
-					]),
-
-				# 'like_button_rec_{i}': 'src'
-				html.Div(id=f'rec_{i}_like_button', className="play_button like_button", children=[
-
-					html.Img(id=f'rec_{i}_like_img', src=like_button),
-					]),
-				]),
+				
+			html.Div(i, className='number'),
 
 			html.Div(id=f'rec_full_{i}', className='rec_full', children=[
 				
@@ -302,46 +293,36 @@ app.layout = html.Div(id='main', children=[
 						]),
 					# similarity indexes
 					html.Div(id=f'rec_similarity_{i}', className='rec_similarity', children=[
-						html.Div(id=f'rec_{i}_similarity', className='total_similarity similarity_index', children=[
-							# 'similarity: ' + str(round(latents.loc[i-1, 'similarity'], 2))
+						html.Div(id=f'rec_{i}_similarity_container', className='similarity_container', children=[
+							html.Div(className='similarity_title', children='Similarity:'),
+							html.Div(id=f'rec_{i}_similarity', className='total_similarity similarity_index', children=[
 							]),
-						html.Div(id=f'rec_{i}_time_similarity', className='time_similarity similarity_index', children=[
-							# 'time similarity: ' + str(round(latents.loc[i-1, 'time_similarity'],2))
+						]),
+						
+
+						html.Div(id=f'rec_{i}_timesimilarity_container', className='similarity_container', children=[
+							html.Div(className='similarity_title', children='Time Similarity:'),
+							html.Div(id=f'rec_{i}_time_similarity', className='time_similarity similarity_index', children=[
 							]),
-						html.Div(id=f'rec_{i}_freq_similarity', className='freq_similarity similarity_index', children=[
-							# 'frequency similarity: ' + str(round(latents.loc[i-1, 'frequency_similarity'],2))
+						]),
+						
+
+						html.Div(id=f'rec_{i}_freqsimilarity_container', className='similarity_container', children=[
+							html.Div(className='similarity_title', children='Frequency Similarity:'),
+							html.Div(id=f'rec_{i}_freq_similarity', className='freq_similarity similarity_index', children=[
 							])
+						])
+						
 						]),
 
-					# audio feature comparison
-					html.Div(id=f'rec_feature_compare_{i}', className='rec_feature_compare', children=[
-							html.Div(className=f'feature_compare feature_compare_title', children=[
-								html.Div(className='query_feature query_feature_title', children=[
-									'Query'
-									]),
-
-								html.Div(className='diff_feature diff_feature_title', children=[
-									'Feature Difference'
-									]),
-
-								html.Div(className='rec_feature rec_feature_title', children=[
-									'Recommendation'
-									]),
-								]),
-
-							*[html.Div(className=f'feature_compare {feature}_compare', children=[
-								html.Div(id=f'rec_{i}_{feature}_compare_query', className='query_feature', children=[]),
-
-								html.Div(className='feature_diff_container', children=[
-									html.Div(className='diff_feature_name', children=feature.capitalize()),
-									html.Div(id=f'rec_{i}_{feature}_diff',className='diff_feature', children=[]),
-									]),
-								
-								html.Div(id=f'rec_{i}_{feature}_compare', className='rec_feature', children=[]),
-								]) for feature in features_to_use]
+					
+					html.Div(id=f'rec_feature_graph_div_{i}', className='rec_feature_compare_graph', children=[
+						dcc.Graph(id=f'rec_feature_graph_{i}', className='rec_feature_graph', config={'displayModeBar': False})
 						])
 
 					])
+
+
 
 				])
 		]),
@@ -351,7 +332,7 @@ app.layout = html.Div(id='main', children=[
 	#### UMAP PLOT #####
 
 	html.Div(id='umap_plot', className='umap_plot', children=[
-		dcc.Graph(id='umap_plot_graph', responsive=True, config={'autosizable':True, 'frameMargins':0, 'displayModeBar':'hover'})
+		dcc.Graph(id='umap_plot_graph', responsive=True, config={'autosizable':True, 'frameMargins':0, 'displayModeBar': False})
 		])
 	]),
 
@@ -451,49 +432,6 @@ def render_content(tab):
 	if tab == 'advanced':
 		return 'noshow', 'show'
 
-#player example code
-
-@app.callback(
-	Output('play_button', 'children'),
-	Input('play_button', 'n_clicks'),
-	Input('play_button', 'value'))
-def test_spotify(n_clicks, uri):
-	if n_clicks != None:
-		token = (auth.get_token())
-
-		spotify = spotipy.Spotify(auth=token)
-		devices = spotify.devices()
-
-		device_id = devices['devices'][0]['id']
-
-		play_uri = [f'spotify:track:{uri}']
-
-		current_track = spotify.current_user_playing_track()
-
-
-		if current_track == None:
-			spotify.start_playback(device_id=device_id, uris=play_uri)
-			print('started from scratch, now playing')
-			return 'Pause'
-		else:
-			playing = current_track['is_playing']
-			current_uri = current_track['item']['id']
-
-			if playing and current_uri == uri:
-				spotify.pause_playback()
-				print('paused')
-				return 'Play'
-			elif current_uri != uri:
-				spotify.start_playback(uris=play_uri)
-				print('played from start')
-				return 'Pause'
-			else:
-				spotify.start_playback()
-				print('resumed play')
-				return 'Pause'
-
-	else:
-		return 'Play'
 
 
 ##### SEARCH #######
@@ -510,7 +448,7 @@ def search(search_input):
 	try:
 		track, latents, this_track, audio_features = sonufy.search_for_recommendations(search_input, get_time_and_freq=True)
 
-		features_to_use = ['danceability', 'energy', 'key', 'loudness', 'speechiness', 'acousticness', 'instrumentalness', 'liveness', 'valence', 'tempo', 'time_signature']
+		features_to_use = ['danceability', 'energy', 'loudness', 'speechiness', 'acousticness', 'instrumentalness', 'liveness', 'valence', 'tempo']
 		
 		data = dict()
 
@@ -539,9 +477,9 @@ def search(search_input):
 		    'track_id': latents.loc[i, 'track_id'],
 		    'track_uri': latents.loc[i, 'track_uri'],
 		    'release_date': latents.loc[i, 'release_date'],
-	    	'similarity': latents.loc[i, 'similarity'],
-	    	'time_similarity': latents.loc[i, 'time_similarity'],
-	    	'freq_similarity': latents.loc[i, 'frequency_similarity'],
+	    	'similarity': str(np.round(latents.loc[i, 'similarity'] * 100, 2)) + '%',
+	    	'time_similarity': str(np.round(latents.loc[i, 'time_similarity']* 100, 2)) + '%',
+	    	'freq_similarity': str(np.round(latents.loc[i, 'frequency_similarity'] * 100, 2)) + '%',
 		    'audio_features':{
 		        feature: audio_features[i+1][feature] for feature in features_to_use
 		    	},
@@ -597,18 +535,12 @@ query_fields = {
 }
 
 
-query_feature_fields = {f'this_{feature}_compare': {'input': feature, 'output':'children'} for feature in features_to_use}
-	
-query_rec_feature_fields = {f'rec_{i}_{feature}_compare_query': {'input': feature, 'output':'children'} for i in range(1,11) for feature in features_to_use}
-
 query_vector_fields = {f'this_vector_compare_query_{i}': {'input': sonufy.latent_cols[i], 'output':['style','children']} for i in range(len(sonufy.latent_cols))}
 
 
 
 @app.callback(
 	*[Output(field, query_fields[field]['output']) for field in query_fields.keys()],
-	*[Output(field, query_feature_fields[field]['output']) for field in query_feature_fields.keys()],
-	*[Output(field, query_rec_feature_fields[field]['output']) for field in query_rec_feature_fields.keys()],
 	# *[Output(field, query_vector_fields[field]['output'], for field in query_vector_fields.keys())],
 	Input('memo', 'data')
 	)
@@ -621,12 +553,6 @@ def populate_query(data):
 
 	for field in query_fields.keys():
 		return_array.append(data['this'][query_fields[field]['input']])
-
-	for field in query_feature_fields.keys():
-		return_array.append(data['this']['audio_features'][query_feature_fields[field]['input']])
-
-	for field in query_rec_feature_fields.keys():
-		return_array.append(data['this']['audio_features'][query_rec_feature_fields[field]['input']])
 
 	return return_array
 
@@ -652,20 +578,6 @@ rec_fields = {f'rec_{i}' : {
 } for i in range(1,11)}
 
 
-rec_feature_fields = {
-	f'rec_{i}': {
-		f'rec_{i}_{feature}_compare': {'input': feature, 'output':'children'}
-			for feature in features_to_use }
-		for i in range(1,11)
-		}
-
-rec_feature_diff_fields= {
-	f'rec_{i}': {
-		f'rec_{i}_{feature}_diff': {'input': feature, 'output':'children'}
-			for feature in features_to_use }
-		for i in range(1,11)
-		}
-
 rec_vector_fields = {
 	f'rec_{i}' : {'this_vector_compare_query_{j}': {'input': sonufy.latent_cols[i], 'output':['style','children']} for j in range(len(sonufy.latent_cols))} for i in range(10)
 }
@@ -675,8 +587,6 @@ rec_vector_fields = {
 
 @app.callback(
 	*[Output(field, rec_fields[key][field]['output']) for key in rec_fields.keys() for field in rec_fields[key].keys()],
-	*[Output(field, rec_feature_fields[key][field]['output']) for key in rec_fields.keys() for field in rec_feature_fields[key].keys()],
-	*[Output(field, rec_feature_diff_fields[key][field]['output']) for key in rec_fields.keys() for field in rec_feature_diff_fields[key].keys()],
 	# *[Output(field, rec_vector_fields[field]['output'], for field in rec_vector_fields.keys())],
 	Input('memo', 'data'))
 def populate_recs(data):
@@ -695,33 +605,141 @@ def populate_recs(data):
 		for field in rec_fields[rec['id']].keys():
 			return_array.append(rec[rec_fields[rec['id']][field]['input']])
 
+	
+	return return_array
+
+
+@app.callback(
+	Output('this_feature_graph', 'figure'),
+	*[Output(f'rec_feature_graph_{i}', 'figure') for i in range(1,11)],
+	Input('memo', 'data'))
+def populate_polar_graphs(data):
+
+	if data == None:
+		raise PreventUpdate()
+
+	fig_array = []
+
+	n_features = len(features_to_use)
+
+	thetas = [i * 360 / n_features for i in range(n_features)]
+	widths = [360 / n_features for _ in range(n_features)]
+
+	angular_tickvals = [(i) * 360 / n_features for i in range(n_features)]
+
+
 	# feature fields
 
+	query_audio_features = data['this']['audio_features']
+	query_audio_features = np.array([query_audio_features[feature] for feature in query_audio_features.keys()])
+
+	query_audio_features_saved = query_audio_features.copy()
+
+	def scale_loudness(val):
+		return np.round(min(max((val + 80) / 80, 0), 1),2)
+
+	def scale_tempo(val):
+		return np.round(min(max((val - 50) / 150, 0), 1), 2)
+
+	loudness_index = features_to_use.index('loudness')
+	tempo_index = features_to_use.index('tempo')
+
+	query_audio_features[loudness_index] = scale_loudness(query_audio_features[loudness_index])
+	query_audio_features[tempo_index] = scale_tempo(query_audio_features[tempo_index])
+
+
+	fig = go.Figure(
+				go.Barpolar(
+		            r=query_audio_features,
+		            theta=thetas,
+		            width=widths,
+		            opacity=1,
+		            hovertext=query_audio_features,
+		            hovertemplate='%{hovertext}',
+		            name=data['this']['track_name']
+				)
+			)
+	fig.update_layout(barmode='overlay',
+		                  polar_radialaxis_autorange=False,
+		                  polar_radialaxis_tickvals=np.arange(0,1,0.1),
+		                  polar_radialaxis_showticklabels=False,
+		                  polar_angularaxis_tickvals=angular_tickvals, 
+		                  polar_angularaxis_ticktext=features_to_use,
+		                  dragmode=False
+		                    )
+
+	fig_array.append(fig)
+
 	for i in range(1,11):
 
-		rec = data[f'rec_{i}']
+		rec_audio_features = data[f'rec_{i}']['audio_features']
+		rec_audio_features = np.array([rec_audio_features[feature] for feature in rec_audio_features.keys()])
 
-		for field in rec_feature_fields[rec['id']].keys():
-			return_array.append(rec['audio_features'][rec_feature_fields[rec['id']][field]['input']])
+		rec_audio_features_saved = rec_audio_features.copy()
 
-	# feature diff
+		rec_audio_features[loudness_index] = scale_loudness(rec_audio_features[loudness_index])
+		rec_audio_features[tempo_index] = scale_tempo(rec_audio_features[tempo_index])
 
-	for i in range(1,11):
+		base_query = np.array([min(query_audio_features[i], rec_audio_features[i]) 
+              if query_audio_features[i] > rec_audio_features[i] 
+              else 0 
+              for i in range(len(query_audio_features))])
+		base_rec = np.array([min(query_audio_features[i], rec_audio_features[i]) 
+		              if rec_audio_features[i] > query_audio_features[i] 
+		              else 0 
+		              for i in range(len(query_audio_features))])
+		radius_query = np.array([query_audio_features[i] - base_query[i] for i in range(len(query_audio_features))])
+		radius_rec = np.array([rec_audio_features[i] - base_rec[i] for i in range(len(query_audio_features))])
+		diff = np.round(rec_audio_features - query_audio_features, 2)
+		diff_real = np.round(rec_audio_features_saved - query_audio_features_saved, 2)
 
-		rec = data[f'rec_{i}']
 
-		for field in rec_feature_diff_fields[rec['id']].keys():
+		fig = go.Figure()
+		fig.add_trace(go.Barpolar(
+		            base=base_query,
+		            r=radius_query,
+		            theta=thetas,
+		            width=widths,
+		            opacity=1,
+		            hovertext=query_audio_features_saved,
+		            hovertemplate='%{hovertext}',
+		            name=data['this']['track_name']
+		))
+		fig.add_trace(go.Barpolar(
+		            base=base_rec,
+		            r=radius_rec,
+		            theta=thetas,
+		            width=widths,
+		            opacity=1,
+		            hovertext=rec_audio_features_saved,
+		            hovertemplate='%{hovertext}',
+		            name=data[f'rec_{i}']['track_name']
+		        ))
+		fig.add_trace(go.Barpolar(
+		            base=base_query+radius_query,
+		            r=diff,
+		            theta=thetas,
+		            width=abs(diff)*widths,
+		            opacity=1,
+		            hovertext=diff_real,
+		            hovertemplate='%{hovertext}',
+		            name='Difference'
+		        ))
 
-			rec_feature = rec['audio_features'][rec_feature_diff_fields[rec['id']][field]['input']]
+		fig.update_layout(barmode='overlay',
+		                  polar_radialaxis_autorange=False,
+		                  polar_radialaxis_tickvals=np.arange(0,1,0.1),
+		                  polar_radialaxis_showticklabels=False,
+		                  polar_angularaxis_tickvals=angular_tickvals, 
+		                  polar_angularaxis_ticktext=features_to_use,
+		                    )
+		fig_array.append(fig)
 
-			query_feature = data['this']['audio_features'][rec_feature_diff_fields[rec['id']][field]['input']]
-
-			diff = round(abs(rec_feature - query_feature),2)
-
-			return_array.append(diff)
+	return fig_array
 
 
-	return return_array
+			
+
 
 
 #### AUDIO PLAYER ######
@@ -787,7 +805,7 @@ play_button_fields = {f'{id_name}_play_img':{'output':'src', 'input':'n_clicks'}
 	Input('next_play_img', 'n_clicks'),
 	State('memo', 'data'),
 	)
-def test_play_pause(*args):
+def play_pause(*args):
 
 	data = args[-1]
 
@@ -890,7 +908,8 @@ def plot_umap(data):
 		    x=0.01
 		),
 		xaxis = dict(visible=False),
-		yaxis = dict(visible=False)
+		yaxis = dict(visible=False),
+		dragmode = 'pan'
 	)
 
 	return fig
