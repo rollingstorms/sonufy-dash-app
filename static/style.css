@@ -185,13 +185,13 @@ input {
 	padding: 0 5% 5%;
 }
 
-#search_input {
+#search_nav {
     border-radius: 10px;
     width: 400px;
     max-width: 88%;
 }
 
-.open #search_input {
+.open #search_nav {
    
 }
 

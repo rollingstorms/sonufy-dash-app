@@ -8,6 +8,9 @@ import dash_daq as daq
 from config import config
 import pandas as pd
 
+import json
+
+
 from src.Sonufy import *
 
 import plotly_express as px
@@ -85,7 +88,7 @@ back_button = app.get_asset_url('back_button.svg')
 
 app.layout = html.Div(id='main', children=[
 	dcc.Location(id='location_bar'),
-	dcc.Store(id='memo', data=None),
+	dcc.Loading(children=[dcc.Store(id='memo', data=None),], fullscreen=True, type='default'),
 	html.Div(id='test_div', children=[]),
 	html.Div(id='body', className='body', children=[
 
@@ -104,7 +107,7 @@ app.layout = html.Div(id='main', children=[
 			]),
 		
 			# search bar
-			dbc.Input(id="search_input", placeholder="Search for a track on Spotify", type="text", debounce=True),
+			dbc.Input(id="search_nav", placeholder="Search for a track on Spotify", type="text", debounce=True, autoComplete=False),
 			
 			]),
 		
@@ -141,9 +144,10 @@ app.layout = html.Div(id='main', children=[
 	# 'this_vector_compare_query': 'children'
 	# 'this_{feature}_compare': 'children'
 
-
+	
 	html.Div(id='this_song', className='sixteen', children=[
 		html.Div(id='this_hover', className='hover'),
+
 		html.Div(id='this_song_div', className='track_div', children=[
 			html.Div(id='this_header_div', className='this_header_div', children=[
 
@@ -362,15 +366,13 @@ app.layout = html.Div(id='main', children=[
 
 @app.callback(
 	Output('location_bar', 'pathname'),
-	Output('search_input', 'value'),
+	Output('search_nav', 'value'),
 	Input('location_bar', 'href'),
 	State('location_bar', 'pathname'),
 	State('location_bar', 'search'),
-	State('search_input', 'value')
+	State('search_nav', 'value')
 	)
 def check_auth(href, path, search, search_bar):
-
-	print(href, path, search)
 
 	token = (auth.get_token())
 
@@ -438,15 +440,15 @@ def render_content(tab):
 
 @app.callback(
 	Output('memo', 'data'),
-	Input(component_id='search_input', component_property='value')
+	Input(component_id='search_nav', component_property='value')
 	)
-def search(search_input):
+def search(search_nav):
 
-	if search_input is None or '':
+	if search_nav == (None or ''):
 		raise PreventUpdate()
 
 	try:
-		track, latents, this_track, audio_features = sonufy.search_for_recommendations(search_input, get_time_and_freq=True)
+		track, latents, this_track, audio_features = sonufy.search_for_recommendations(search_nav, get_time_and_freq=True)
 
 		features_to_use = ['danceability', 'energy', 'loudness', 'speechiness', 'acousticness', 'instrumentalness', 'liveness', 'valence', 'tempo']
 		
@@ -493,31 +495,63 @@ def search(search_input):
 	except:
 		return None
 
-	
+
+
+container_keys = ['sonufy_nav', 'this_song'] + [f'rec_{i}' for i in range(1,11)]
+
+button_keys = ['search_nav', 'sonufy_nav', 'this_song', 'close_nav', 'close_this'] + [f'rec_{i}' for i in range(1,11)] + [f'close_rec_{i}' for i in range(1,11)]
+
+container_status = {key:'closed' for key in container_keys}
+container_status['sonufy_nav'] = 'open'
+
+button_link = dict()
+for button in button_keys:
+    if button in container_keys:
+        button_link[button] = {'link':button, 'action':'open', 'field': 'n_clicks'}
+    else:
+        button_split = button.split('_')
+        if button_split[1] == 'nav':
+            button_link[button] = {'link': 'sonufy_nav', 'action':'close'}
+            if button_split[0] == 'search':
+                button_link[button]['field'] = 'value'
+            else:
+                button_link[button]['field'] = 'n_clicks'
+        elif button_split[1] == 'this':
+            button_link[button] = {'link': 'this_song', 'action':'close', 'field':'n_clicks'}
+        else:
+            button_link[button] = {'link': f'rec_{button_split[-1]}', 'action':'close', 'field':'n_clicks'}
+            
+
 
 @app.callback(
-	Output('test_div', 'children'),
-	Input('memo', 'data'),
-	)
-def test_memo(data):
-
-	if data == None:
-		raise PreventUpdate()
-
-	return None#str(data)
-
-@app.callback(
-	Output('sonufy_nav','className'),
+	*[Output(container, 'className') for container in container_keys],
 	Output('close_nav', 'className'),
-	Input('memo', 'data'),
-	Input('search_input', 'value')
-	)
-def open_main_tab(data, search_input):
+	*[Input(button, button_link[button]['field']) for button in button_keys],
+	Input('memo','data')
+)
+def open_close_control(*args):
 
-	if search_input is None or '':
+	if args[-1] == None:
 		raise PreventUpdate()
 
-	return 'sixteen', 'close'
+	clicked = button_link[ctx.triggered_id]
+
+	link = clicked['link']
+
+	status = container_status[link]
+
+	action = clicked['action']
+
+	for key in container_status.keys():
+		container_status[key] = 'closed'
+
+	if action == 'open':
+		container_status[link] = 'open'
+
+
+	return ['sixteen ' + container_status[container_key] for container_key in container_status.keys()] + ['close']
+
+
 
 
 ## Query Fields ##
@@ -759,7 +793,6 @@ def play_pause_skip(token, uri, track_id, player_id, button_type):
 
 	current_track = spotify.current_user_playing_track()
 
-	print(current_track)
 
 	if button_type == 'play':
 		if current_track == None:
@@ -813,7 +846,7 @@ def play_pause(*args):
 
 	#dictionary for the key -> img output
 
-	if n_clicks[0] == None:
+	if data == None:
 		raise PreventUpdate()
 
 	token = (auth.get_token())
@@ -855,11 +888,8 @@ def play_pause(*args):
 		uri = uris_list[clicked_index:] + uris_list[:clicked_index]
 		
 
-	print(uri)
-
 	status = play_pause_skip(token, uri, track_id, button_id, button_type)
 
-	print(status)
 
 	buttons = [play_button for _ in range(len(play_button_fields.keys()))]
 
@@ -928,15 +958,15 @@ def plot_umap(data):
 # 	*[Output(f'play_button_rec_{i}', 'value') for i in range(1,11)],
 # 	Output('umap_plot', 'children'),
 # 	*[Output(f'number_{i}', 'value') for i in range(len(sonufy.latent_cols))],
-# 	Input(component_id='search_input', component_property='value')
+# 	Input(component_id='search_nav', component_property='value')
 # 	)
-# def search(search_input):
+# def search(search_nav):
 
-# 	if search_input is None or '':
+# 	if search_nav is None or '':
 # 		raise PreventUpdate
 
 # 	# try:
-# 	track, latents, this_track, audio_features = sonufy.search_for_recommendations(search_input, get_time_and_freq=True)
+# 	track, latents, this_track, audio_features = sonufy.search_for_recommendations(search_nav, get_time_and_freq=True)
 	
 # 	features_to_use = ['danceability', 'energy', 'key', 'loudness', 'speechiness', 'acousticness', 'instrumentalness', 'liveness', 'valence', 'tempo', 'time_signature']
 	

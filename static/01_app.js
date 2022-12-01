@@ -1,18 +1,4 @@
-
 window.onSpotifyWebPlaybackSDKReady = () => {
-
-     $('.hover').click(function(){
-        if ($(this).hasClass('open')){
-        }else{
-            $(this).parent().addClass('open')
-        }
-                
-    });
-
-    $('.close').click(function(){
-        $('.sixteen').removeClass('open')
-    });
-
 
     const token_string = document.cookie;
 	let token = token_string.split('access_token=')
